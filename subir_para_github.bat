@@ -5,6 +5,15 @@ echo ==========================================================
 echo   ENVIAR SISTEMA PARA O GITHUB (PARA HOSPEDAGEM NO RENDER)
 echo ==========================================================
 echo.
+
+"%~dp0mingit\cmd\git.exe" remote get-url origin > nul 2>&1
+if %errorlevel% == 0 (
+    echo Repositório remoto já configurado!
+    echo Enviando atualizações mais recentes para o GitHub...
+    "%~dp0mingit\cmd\git.exe" push origin main
+    goto FIM
+)
+
 set /p REPO_URL="Cole a URL do seu repositório no GitHub (ex: https://github.com/seu-usuario/onboarding-contabilidade-josana.git): "
 
 if "%REPO_URL%"=="" (
@@ -21,9 +30,10 @@ echo Conectando repositório remoto...
 echo Enviando arquivos para a branch main...
 "%~dp0mingit\cmd\git.exe" push -u origin main
 
+:FIM
 echo.
 echo ==========================================================
 echo Pronto! Arquivos enviados ao GitHub com sucesso.
-echo Agora no Render.com basta selecionar este repositório!
+echo O Render detectará e fará o deploy automático!
 echo ==========================================================
 pause
