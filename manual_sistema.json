@@ -1,0 +1,139 @@
+{
+  "versao": "2.4.0",
+  "data_atualizacao": "2026-10-20",
+  "escritorio": "Josana Mota Contabilidade",
+  "modulos": [
+    {
+      "id": "acesso_e_rbac",
+      "titulo": "1. Acesso Seguro, Perfis (RBAC) e PIN Individual",
+      "icone": "shield",
+      "descricao": "Como funciona o login, níveis de permissão e proteção de dados no escritório",
+      "topicos": [
+        {
+          "subtitulo": "Níveis de Permissão (RBAC)",
+          "conteudo": "O sistema possui 3 perfis hierárquicos de segurança:\n\n• **👑 GESTOR (Diretoria / Coordenação Geral):** Acesso irrestrito a todos os clientes, funil completo, relatórios executivos de SLA, métricas da equipe, exclusão e cadastro de colaboradores, alteração de níveis de permissão e chaves de IA.\n• **🚀 ONBOARDING (Implantação):** Acompanha a carteira inteira de clientes, avança qualquer uma das 7 etapas, gera dossiês da junta e dispara pautas de cobrança via WhatsApp.\n• **🔒 TÉCNICO (Operacional Setorial):** Focado no seu setor (Fiscal, Pessoal/DP, Contábil ou Paralegal). Acessa diretamente seu Cockpit Pessoal com as tarefas e empresas atribuídas ao seu squad, sem poluição visual ou risco de alterar processos de outras áreas."
+        },
+        {
+          "subtitulo": "Login por PIN Individual & Troca de Usuário",
+          "conteudo": "Cada membro da equipe possui um PIN numérico (padrão inicial: `1234`).\n\n• Para trocar de usuário: clique em **'Trocar'** no canto inferior esquerdo da barra lateral ou clique no crachá com sua foto no topo da tela.\n• Para alterar seu PIN: clique no botão **'PIN'** no rodapé da barra lateral e digite seu novo código de 4 a 8 dígitos."
+        },
+        {
+          "subtitulo": "Foto de Perfil & Edição de Cadastro",
+          "conteudo": "Cada colaborador pode ter sua foto profissional exibida nos avatares do sistema.\n\n• Para alterar sua foto: clique no botão **'Perfil'** no rodapé da barra lateral.\n• Envie uma imagem em formato PNG ou JPG (até 5MB).\n• O Gestor pode editar dados de qualquer membro na tela **Equipe & Colaboradores**."
+        }
+      ]
+    },
+    {
+      "id": "onboarding_7_etapas",
+      "titulo": "2. Onboarding Contábil (Esteira das 7 Etapas)",
+      "icone": "git-pull-request",
+      "descricao": "Fluxo padrão de implantação de empresas constituídas e transição operacional",
+      "topicos": [
+        {
+          "subtitulo": "Estrutura das 7 Etapas do Onboarding",
+          "conteudo": "A jornada de entrada do cliente segue o método rigoroso em 7 etapas:\n\n1. **Etapa 01: Contrato & Alinhamento:** Coleta do contrato de prestação de serviços assinado, procurações eletrônicas da Receita/Prefeitura e reunião de boas-vindas com o cliente.\n2. **Etapa 02: Sistemas & Acessos:** Validação do Certificado Digital (e-CNPJ/e-CPF), emissão de senhas municipais e cadastramento do cliente no software contábil (Domínio Sistemas).\n3. **Etapa 03: Parametrização & Saldos:** Enquadramento tributário (Simples, Presumido, Real), importação do plano de contas, cadastro de produtos/alíquotas e saldos de balanço da contabilidade anterior.\n4. **Etapa 04: Documentos Iniciais:** Recebimento dos livros fiscais, folhas de pagamento anteriores, relação de funcionários, FGTS/INSS e contratos bancários.\n5. **Etapa 05: Treinamento & Integração:** Instrução do cliente sobre envio de extratos bancários, emissão correta de notas fiscais e canais oficiais de comunicação do escritório.\n6. **Etapa 06: Primeira Competência:** Execução e fechamento do primeiro mês fiscal e contábil, emissão das primeiras guias (DAS/DARF) e envio dos holerites.\n7. **Etapa 07: Homologação & Encerramento:** Reunião final de validação com os sócios, aplicação de pesquisa de satisfação (NPS) e entrega formal do cliente para a rotina contínua."
+        },
+        {
+          "subtitulo": "Squad do Cliente (Distribuição de Responsáveis)",
+          "conteudo": "Ao cadastrar um novo cliente, o gestor define os especialistas responsáveis de cada departamento: Paralegal, Fiscal, Pessoal e Contábil. Cada profissional recebe automaticamente suas tarefas e é notificado dos prazos."
+        },
+        {
+          "subtitulo": "Prazos em Lote por Etapa",
+          "conteudo": "Na ficha do onboarding, utilize o botão **'Definir Prazo em Lote'** para estipular a data limite de todas as atividades daquela etapa em apenas 1 clique, facilitando o cumprimento dos SLAs."
+        }
+      ]
+    },
+    {
+      "id": "ficha_societaria_67_perguntas",
+      "titulo": "3. Ficha Societária & Abertura de Empresa (67 Perguntas)",
+      "icone": "file-signature",
+      "descricao": "Playbook para empresas em constituição, viabilidade, DBE, Junta Comercial e link WhatsApp",
+      "topicos": [
+        {
+          "subtitulo": "Envio do Link de Coleta pelo WhatsApp",
+          "conteudo": "Para clientes que contrataram abertura de empresa:\n\n1. Abra a Ficha da Empresa em Constituição e clique em **'Link WhatsApp (Cliente)'** no topo do modal.\n2. O sistema copia um link criptografado seguro (ex: `/#coleta=TOKEN`).\n3. Envie este link diretamente pelo WhatsApp para o cliente.\n4. O cliente responde pelo celular ou computador **sem precisar de login ou senha**."
+        },
+        {
+          "subtitulo": "Múltiplos Sócios & Anexo de Documentos",
+          "conteudo": "O formulário externo permite adicionar **Sócio Administrador + Sócios Adicionais ilimitados** com qualificação completa e upload individual de:\n• RG, CNH ou Carteira Profissional do Sócio\n• Comprovante de residência recente (últimos 90 dias)\n• Contrato de Aluguel e IPTU do Imóvel\n• Habite-se / AVCB dos Bombeiros\n• Carteira do Responsável Técnico (CRM, CREA, OAB, etc.)"
+        },
+        {
+          "subtitulo": "Autopreenchimento por CEP & Pesquisa de CNAEs",
+          "conteudo": "• **Autopreenchimento por CEP:** Ao digitar o CEP residencial ou empresarial, o sistema preenche imediatamente Logradouro, Bairro, Cidade e UF via ViaCEP.\n• **CNAEs Sem Atrito:** O cliente apenas descreve as atividades exercidas em linguagem comum. A equipe contábil pesquisa os CNAEs diretamente no buscador integrado da Ficha Societária e enquadra as atividades com precisão."
+        },
+        {
+          "subtitulo": "Dossiê da Junta & Conclusão da Abertura com CNPJ",
+          "conteudo": "• **Dossiê da Junta:** Clique em **'Dossiê da Junta'** para gerar a minuta completa de Contrato Social e qualificação dos sócios pronta para impressão ou protocolo na Junta Comercial.\n• **Concluir Abertura:** Assim que o CNPJ for emitido, clique em **'Concluir Abertura'**, informe o CNPJ emitido e a empresa transitará automaticamente para empresa constituída, ativando as 7 etapas do Onboarding."
+        }
+      ]
+    },
+    {
+      "id": "cockpit_pessoal_e_ia",
+      "titulo": "4. Meu Cockpit Pessoal & IA de Produtividade",
+      "icone": "sparkles",
+      "descricao": "A tela de trabalho diário de cada colaborador técnico",
+      "topicos": [
+        {
+          "subtitulo": "O Que Fazer Agora (Fila de Prioridades)",
+          "conteudo": "Organização inteligente das tarefas pendentes do colaborador:\n\n• 🔴 **Atrasadas:** Prazos expirados que requerem resolução imediata.\n• 🟡 **Hoje / Amanhã:** Tarefas com vencimento urgente.\n• 🔵 **Próximos 7 Dias:** No radar para planejamento semanal.\n• ⚪ **Próximas Etapas:** Tarefas futuras.\n\n**Conclusão Rápida:** Dê check diretamente na caixa de seleção para registrar a entrega com carimbo de data, hora e assinatura digital do técnico."
+        },
+        {
+          "subtitulo": "Filtros de Período (Semana, Mês, Trimestre)",
+          "conteudo": "Alterne entre **📅 Esta Semana (7d)**, **📆 Este Mês (30d)** e **📊 Este Trimestre (90d)** para visualizar seu volume de entregas e índice de pontualidade em diferentes horizontes temporais."
+        },
+        {
+          "subtitulo": "Diagnóstico de IA & Coaching Profissional",
+          "conteudo": "Clique no botão **'Gerar Novo Diagnóstico IA'** no seu Cockpit. A IA analisa suas métricas reais de pontualidade, volume e possíveis gargalos e emite um relatório com:\n\n• Análise de ritmo e eficiência\n• Pontos fortes identificados\n• Pontos de atenção e prioridades dos próximos 5 dias\n• Dicas técnicas especializadas para o seu departamento (Fiscal, DP, Contábil ou Paralegal)."
+        }
+      ]
+    },
+    {
+      "id": "metricas_equipe_e_gestao",
+      "titulo": "5. Métricas da Equipe & Gestão Executiva",
+      "icone": "award",
+      "descricao": "Visão executiva do desempenho, ranking e distribuição de carga de trabalho",
+      "topicos": [
+        {
+          "subtitulo": "Ranking de Produtividade & Pontualidade",
+          "conteudo": "Disponível para Gestores e Onboarding. Apresenta:\n\n• Score de Produtividade (0 a 100) calibrado por entregas dentro do prazo\n• Comparativo de entregas em 7, 30 e 90 dias\n• Taxa de Pontualidade (%) no cumprimento de datas limites\n• Destaque semanal com troféu para o #1 do ranking"
+        },
+        {
+          "subtitulo": "Raio-X & IA de Qualquer Colaborador",
+          "conteudo": "O Gestor pode clicar no botão **'Raio-X & IA'** de qualquer analista na tabela de métricas para inspecionar seu Cockpit pessoal e prestar auxílio em eventuais gargalos."
+        }
+      ]
+    },
+    {
+      "id": "ferramentas_e_comunicacao",
+      "titulo": "6. Ferramentas Integradas & Comunicação com Clientes",
+      "icone": "message-square",
+      "descricao": "Pauta de cobrança para WhatsApp e organização automática de pastas locais",
+      "topicos": [
+        {
+          "subtitulo": "Pauta de Cobrança Consolidada para WhatsApp",
+          "conteudo": "Na Ficha do Cliente, clique em **'Pauta WhatsApp'**. O sistema compila automaticamente todas as pendências abertas daquele cliente e gera uma mensagem profissional e cordial pronta para ser copiada e colada no WhatsApp."
+        },
+        {
+          "subtitulo": "Criação Automática de Pastas Locais no Servidor",
+          "conteudo": "Clique em **'Criar Pastas no Servidor'** para gerar a árvore estruturada de diretórios da empresa (01_CONTRATOS, 02_DOCUMENTOS_SOCIETARIOS, 03_FISCAL, 04_FOLHA, 05_CONTABIL) e abri-la no Windows Explorer."
+        }
+      ]
+    },
+    {
+      "id": "modo_noturno_e_notion",
+      "titulo": "7. Modo Noturno (Dark Mode) & Design Notion",
+      "icone": "moon",
+      "descricao": "Personalização visual, alternância de tema e identidade Josana Mota",
+      "topicos": [
+        {
+          "subtitulo": "Como Ativar o Modo Noturno",
+          "conteudo": "Clique no botão de **Lua / Sol (🌙 / ☀️)** localizado na barra superior ou no rodapé do menu lateral. O sistema alterna instantaneamente para o tema noturno minimalista inspirado no Notion Dark Mode, salvando sua preferência para as próximas sessões."
+        },
+        {
+          "subtitulo": "Identidade Visual & Monograma Oficial",
+          "conteudo": "O sistema utiliza o monograma 'JM' no quadrado dourado oficial e a paleta nobre Azul Marinho (`#0A213D`) e Dourado (`#C5A059`), projetada para clareza e elegância em ambos os modos de exibição."
+        }
+      ]
+    }
+  ]
+}

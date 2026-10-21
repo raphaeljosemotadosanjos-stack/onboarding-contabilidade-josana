@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onboarding - Contabilidade Josana</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Marked.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Inicialização imediata do Modo Noturno (evita flash branco)
+    if (localStorage.getItem('onboarding_theme') === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#0A213D',
+              'navy-dark': '#061629',
+              'navy-light': '#153358',
+              gold: '#C5A059',
+              'gold-dark': '#9A7736',
+              'gold-light': '#DFC48B',
+              'gold-subtle': '#FAF6EE'
+            },
+            notion: {
+              canvas: '#FFFFFF',
+              bg: '#FAFAF9',
+              sidebar: '#F7F7F5',
+              border: '#EDEDEB',
+              hover: '#EFEFED',
+              text: '#2F3437',
+              muted: '#787774',
+              subtle: '#9B9A97'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#FAFAF9] text-[#2F3437] antialiased min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+  <div class="flex flex-1 min-h-screen overflow-hidden">
+
+    <!-- SIDEBAR ESTILO NOTION -->
+    <aside class="w-64 bg-[#F7F7F5] text-[#2F3437] flex flex-col flex-shrink-0 border-r border-[#EDEDEB] no-print">
+      <!-- LOGO JOSANA MOTA CONTABILIDADE (MONOGRAMA JM CENTRALIZADO COM NOME ABAIXO) -->
+      <div class="p-4 border-b border-[#EDEDEB] bg-white flex flex-col items-center text-center">
+        <div class="w-14 h-12 flex items-center justify-center p-0.5 mb-1.5 logo-monograma-box rounded-lg">
+          <img src="/logo-monograma.png" alt="JM Josana Mota" class="max-h-full max-w-full object-contain">
+        </div>
+        <div class="min-w-0">
+          <h1 class="font-extrabold text-xs tracking-wider uppercase text-[#0A213D] leading-tight">Josana Mota</h1>
+          <p class="text-[8px] tracking-[0.25em] uppercase font-bold text-[#C5A059] mt-0.5">Contabilidade</p>
+        </div>
+      </div>
+
+      <!-- MENU PRINCIPAL COM TODAS AS VISUALIZAÇÕES -->
+      <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
+        <div class="px-3 pt-2 pb-1.5 text-[10px] font-bold text-[#787774] uppercase tracking-wider">
+          Painéis & Produtividade
+        </div>
+
+        <!-- MEU DASHBOARD PESSOAL (PARA TODOS OS COLABORADORES) -->
+        <button onclick="navegarPara('meu-painel')" id="nav-meu-painel" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-white bg-[#0A213D] shadow-xs">
+          <i data-lucide="sparkles" class="w-4 h-4 text-[#C5A059]"></i>
+          <span>Meu Cockpit & IA</span>
+        </button>
+
+        <!-- DASHBOARD GERAL EXECUTIVO (GESTOR & ONBOARDING) -->
+        <button onclick="navegarPara('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 text-[#0A213D]"></i>
+          <span>Dashboard Geral</span>
+        </button>
+
+        <!-- MÉTRICAS DA EQUIPE (GESTOR & ONBOARDING) -->
+        <button onclick="navegarPara('equipe-metricas')" id="nav-equipe-metricas" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <i data-lucide="award" class="w-4 h-4 text-[#C5A059]"></i>
+          <span>Métricas da Equipe</span>
+        </button>
+
+        <div class="pt-3 px-3 pb-1.5 text-[10px] font-bold text-[#787774] uppercase tracking-wider">
+          Processos & Carteira
+        </div>
+
+        <button onclick="navegarPara('clientes')" id="nav-clientes" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <i data-lucide="building-2" class="w-4 h-4 text-emerald-600"></i>
+          <span>Clientes & Processos</span>
+        </button>
+
+        <button onclick="navegarPara('kanban-etapas')" id="nav-kanban-etapas" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <i data-lucide="kanban" class="w-4 h-4 text-amber-600"></i>
+          <span>Pipeline (7 Etapas)</span>
+        </button>
+
+        <button onclick="navegarPara('kanban-colaboradores')" id="nav-kanban-colaboradores" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <i data-lucide="users-2" class="w-4 h-4 text-indigo-600"></i>
+          <span>Kanban por Colaborador</span>
+        </button>
+
+        <div class="pt-3 px-3 pb-1.5 text-[10px] font-bold text-[#787774] uppercase tracking-wider">
+          Gestão & Controle
+        </div>
+
+        <button onclick="navegarPara('colaboradores')" id="nav-colaboradores" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <i data-lucide="user-check" class="w-4 h-4 text-[#0A213D]"></i>
+          <span>Equipe & Colaboradores</span>
+        </button>
+
+        <button onclick="navegarPara('pendencias')" id="nav-pendencias" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <div class="flex items-center space-x-2.5">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i>
+            <span>Central de Pendências</span>
+          </div>
+          <span id="badge-total-pendencias" class="bg-[#C5A059]/15 text-[#8F6C27] border border-[#C5A059]/30 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+        </button>
+
+        <button onclick="navegarPara('configuracoes')" id="nav-configuracoes" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <i data-lucide="settings" class="w-4 h-4 text-[#787774]"></i>
+          <span>Configurações & IA</span>
+        </button>
+
+        <div class="pt-3 px-3 pb-1.5 text-[10px] font-bold text-[#787774] uppercase tracking-wider">
+          Ajuda & Suporte
+        </div>
+
+        <button onclick="navegarPara('manual-ajuda')" id="nav-manual-ajuda" class="nav-item w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium transition text-[#606770] hover:text-[#0A213D] hover:bg-[#EFEFED]">
+          <i data-lucide="book-open" class="w-4 h-4 text-[#C5A059]"></i>
+          <span>Manual & Suporte IA</span>
+        </button>
+      </nav>
+
+      <!-- USUÁRIO LOGADO / SESSÃO ATIVA -->
+      <div class="p-3 border-t border-[#EDEDEB] bg-white">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center space-x-2.5 min-w-0">
+            <div id="sidebar-user-avatar-slot" class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center">
+              <div id="sidebar-user-avatar" class="w-8 h-8 rounded-full bg-[#0A213D] text-white font-bold flex items-center justify-center text-xs flex-shrink-0 shadow-xs">
+                MS
+              </div>
+            </div>
+            <div class="min-w-0">
+              <p id="sidebar-user-nome" class="text-xs font-bold text-[#0A213D] truncate">Mariana Silva</p>
+              <div class="flex items-center space-x-1">
+                <span id="sidebar-user-dep" class="text-[10px] text-[#787774] truncate">Implantação</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1 border-t border-[#EDEDEB]">
+          <span id="sidebar-user-perfil-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#0A213D]/10 text-[#0A213D] border border-[#0A213D]/20">
+            🚀 Onboarding
+          </span>
+          <div class="flex items-center space-x-1">
+            <button onclick="abrirModalEditarColaborador(estado.usuarioLogado?.id)" class="text-[10px] text-[#787774] hover:text-[#0A213D] px-2 py-0.5 bg-[#F7F7F5] hover:bg-[#EFEFED] border border-[#EDEDEB] rounded transition font-medium" title="Editar minha foto e perfil">
+              Perfil
+            </button>
+            <button onclick="abrirModalAlterarPin()" class="text-[10px] text-[#787774] hover:text-[#0A213D] px-2 py-0.5 bg-[#F7F7F5] hover:bg-[#EFEFED] border border-[#EDEDEB] rounded transition" title="Alterar meu PIN de acesso">
+              PIN
+            </button>
+            <button onclick="abrirModalTrocarUsuario()" class="text-[10px] text-[#787774] hover:text-[#0A213D] px-2 py-0.5 bg-[#F7F7F5] hover:bg-[#EFEFED] border border-[#EDEDEB] rounded transition" title="Trocar de Colaborador ou Sair">
+              Trocar
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+      <!-- TOP BAR -->
+      <header class="h-14 bg-white border-b border-[#EDEDEB] px-6 flex items-center justify-between flex-shrink-0 z-10 sticky top-0 shadow-2xs no-print">
+        <div class="flex items-center space-x-3">
+          <h2 id="topbar-titulo" class="text-sm font-bold text-[#0A213D]">Dashboard & Clientes</h2>
+          <span id="topbar-subtitulo" class="text-[11px] bg-[#F7F7F5] text-[#787774] px-2.5 py-0.5 rounded-md font-medium border border-[#EDEDEB]">Visão Geral</span>
+          <a id="badge-online-tunnel" href="#" class="hidden items-center space-x-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 transition hover:bg-emerald-100 cursor-pointer shadow-2xs" title="Sistema online via Cloudflare HTTPS. Clique para copiar o link público.">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Online (HTTPS)</span>
+          </a>
+        </div>
+
+        <div class="flex items-center space-x-2.5">
+          <!-- BOTÃO TEMA NOTURNO / CLARO -->
+          <button onclick="alternarModoNoturno()" id="btn-toggle-dark-mode" class="p-2 rounded-lg border border-[#EDEDEB] hover:bg-[#EFEFED] text-[#787774] hover:text-[#0A213D] transition shadow-2xs flex items-center justify-center" title="Alternar Modo Noturno (Escuro / Claro)">
+            <i data-lucide="moon" id="icon-dark-mode" class="w-4 h-4 text-[#C5A059]"></i>
+          </button>
+
+          <!-- BADGE DE QUEM ESTÁ LOGADO -->
+          <div onclick="abrirModalTrocarUsuario()" class="flex items-center space-x-2 bg-[#F7F7F5] hover:bg-[#EFEFED] border border-[#EDEDEB] px-2.5 py-1.5 rounded-lg cursor-pointer transition shadow-2xs" title="Clique para trocar de usuário ou conferir permissões">
+            <div id="topbar-user-avatar-slot" class="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center"></div>
+            <span class="text-xs text-[#787774]">Logado:</span>
+            <strong id="topbar-usuario-nome" class="text-xs text-[#0A213D]">Mariana Silva</strong>
+            <span id="topbar-user-badge" class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#0A213D]/10 text-[#0A213D]">Onboarding</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#787774]"></i>
+          </div>
+
+          <!-- BOTÃO NOVO ONBOARDING (RESTRITO A GESTOR/ONBOARDING) -->
+          <button id="btn-topbar-novo-onboarding" onclick="abrirModalNovoCliente()" class="inline-flex items-center space-x-1.5 bg-[#0A213D] hover:bg-[#153358] text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition active:scale-95">
+            <i data-lucide="plus" class="w-4 h-4 text-[#C5A059]"></i>
+            <span>Novo Onboarding</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- VIEW CONTAINER -->
+      <div id="view-container" class="p-6 flex-1"></div>
+    </main>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: LOGIN INDIVIDUAL COM PIN & RBAC JOSANA MOTA -->
+  <!-- ======================================================== -->
+  <div id="modal-trocar-usuario" class="fixed inset-0 bg-[#0A213D]/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col border border-[#EDEDEB] overflow-hidden animate-in">
+      <div class="px-6 py-4 border-b border-[#EDEDEB] flex items-center justify-between bg-white">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-lg p-1 border border-[#EDEDEB] flex items-center justify-center bg-white shadow-2xs">
+            <img src="/logo-monograma.png" alt="JM" class="max-h-full max-w-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-extrabold text-[#0A213D] text-sm">Josana Mota Contabilidade</h3>
+            <p class="text-[11px] text-[#787774]">Identificação & Acesso Seguro de Colaborador</p>
+          </div>
+        </div>
+        <button id="btn-fechar-modal-login" onclick="fecharModalTrocarUsuario()" class="text-[#787774] hover:text-[#0A213D] p-1.5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <!-- SELEÇÃO DE COLABORADOR -->
+        <div>
+          <label class="block text-xs font-bold text-[#0A213D] uppercase tracking-wider mb-2">1. Escolha seu Usuário:</label>
+          <div id="lista-usuarios-login" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- CAMPO DO PIN INDIVIDUAL -->
+        <div id="box-pin-login" class="pt-3 border-t border-[#EDEDEB] space-y-3">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-[#0A213D]">
+                2. Digite seu PIN de Acesso (<span id="txt-nome-colab-selecionado">Selecione acima</span>):
+              </label>
+              <span class="text-[11px] text-[#787774]">Padrão inicial: <strong>1234</strong></span>
+            </div>
+            <div class="relative">
+              <input type="password" id="input-pin-login" maxlength="8" placeholder="••••" class="w-full px-4 py-2.5 bg-[#F7F7F5] border border-[#EDEDEB] rounded-xl text-center text-lg font-mono tracking-widest font-bold text-[#0A213D] focus:ring-2 focus:ring-[#C5A059] focus:bg-white focus:outline-none transition">
+            </div>
+          </div>
+
+          <div id="erro-pin-login" class="hidden p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center space-x-2">
+            <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600 flex-shrink-0"></i>
+            <span id="txt-erro-pin-login">PIN incorreto. Tente novamente.</span>
+          </div>
+
+          <button type="button" onclick="submeterLoginComPin()" class="w-full py-2.5 bg-[#0A213D] hover:bg-[#153358] text-white font-bold rounded-xl text-xs shadow-xs transition active:scale-98 flex items-center justify-center space-x-2">
+            <i data-lucide="log-in" class="w-4 h-4 text-[#C5A059]"></i>
+            <span>Entrar no Sistema</span>
+          </button>
+        </div>
+
+        <div class="pt-2 text-center">
+          <p class="text-[11px] text-[#787774]">
+            Apenas <strong>Gestores</strong> e <strong>Onboarding</strong> acessam todas as empresas. Especialistas técnicos visualizam apenas seus processos atribuídos.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ALTERAR PIN DE ACESSO -->
+  <!-- ======================================================== -->
+  <div id="modal-alterar-pin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border border-slate-200 overflow-hidden animate-in">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <h3 class="font-bold text-slate-900 text-sm">Alterar meu PIN de Acesso</h3>
+        <button onclick="fecharModalAlterarPin()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="p-5 space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">PIN Atual</label>
+          <input type="password" id="input-pin-atual" placeholder="1234" maxlength="8" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-bold">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Novo PIN (mínimo 4 dígitos)</label>
+          <input type="password" id="input-novo-pin" placeholder="••••" maxlength="8" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-bold">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Confirmar Novo PIN</label>
+          <input type="password" id="input-confirma-novo-pin" placeholder="••••" maxlength="8" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-bold">
+        </div>
+
+        <div id="erro-alterar-pin" class="hidden p-2 rounded bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-[11px]"></div>
+
+        <div class="pt-2 flex justify-end space-x-2">
+          <button onclick="fecharModalAlterarPin()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium">Cancelar</button>
+          <button onclick="salvarNovoPin()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-bold shadow-sm">Salvar PIN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: VISUALIZADOR DE RELATÓRIO ESTILO LEITOR DE PDF -->
+  <!-- ======================================================== -->
+  <div id="modal-relatorio-ia" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in bg-slate-200 no-print-modal">
+      
+      <!-- BARRA DE FERRAMENTAS DO LEITOR DE PDF -->
+      <div class="px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between flex-shrink-0 no-print">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center text-white font-bold">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm">Leitor de Relatório Executivo (Auditoria Semanal)</h3>
+            <p class="text-[11px] text-slate-400">Documento oficial gerado com Inteligência Artificial</p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="imprimirRelatorioPDF()" class="inline-flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Imprimir / Salvar em PDF</span>
+          </button>
+
+          <button onclick="copiarRelatorioIA()" class="inline-flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span id="btn-copiar-relatorio">Copiar Texto</span>
+          </button>
+
+          <button onclick="fecharModalRelatorioIA()" class="text-slate-400 hover:text-white p-1 rounded-lg ml-2">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ÁREA DE VISUALIZAÇÃO DA FOLHA A4 TIMBRADA -->
+      <div class="flex-1 overflow-y-auto p-6 flex justify-center bg-slate-200/90">
+        
+        <!-- LOADING SPINNER -->
+        <div id="relatorio-ia-loading" class="hidden text-center py-20 space-y-3">
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-600 mx-auto"></div>
+          <p class="text-xs font-semibold text-slate-700">A Inteligência Artificial está auditando os processos deste cliente...</p>
+        </div>
+
+        <!-- FOLHA DO DOCUMENTO PDF -->
+        <div id="folha-pdf-imprimivel" class="folha-documento-pdf w-full max-w-[800px] p-10 rounded-xl my-2 space-y-6">
+          <!-- TIMBRADO CABEÇALHO -->
+          <div class="pdf-timbrado-header flex items-start justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h2 class="text-base font-extrabold text-slate-900 tracking-tight" id="pdf-nome-escritorio">Escritório de Contabilidade</h2>
+                <p class="text-xs text-sky-700 font-semibold">Departamento de Implantação & Qualidade</p>
+                <p class="text-[11px] text-slate-400">Relatório Executivo Semanal de Onboarding</p>
+              </div>
+            </div>
+
+            <div class="text-right text-xs">
+              <span class="inline-block px-2.5 py-1 bg-sky-50 text-sky-800 border border-sky-200 rounded-lg font-bold" id="pdf-etapa-badge">Etapa 02</span>
+              <p class="text-[11px] text-slate-500 mt-1" id="pdf-data-emissao">16/10/2026</p>
+            </div>
+          </div>
+
+          <!-- IDENTIFICAÇÃO DA EMPRESA -->
+          <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between">
+            <div>
+              <p class="text-[10px] uppercase font-bold text-slate-400">Cliente Auditado</p>
+              <h3 class="text-base font-bold text-slate-900" id="pdf-razao-social">Razão Social do Cliente</h3>
+              <p class="text-xs text-slate-500" id="pdf-dados-cadastrais">Simples Nacional • Constituída</p>
+            </div>
+
+            <div class="text-right">
+              <div class="text-2xl font-black text-sky-600" id="pdf-pct-conclusao">0%</div>
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Concluído</span>
+            </div>
+          </div>
+
+          <!-- CONTEÚDO HUMANIZADO COM EMOJIS E CARDS FORMATADOS -->
+          <div id="pdf-corpo-conteudo" class="space-y-4 text-xs leading-relaxed text-slate-700"></div>
+
+          <!-- ASSINATURA E RODAPÉ TIMBRADO -->
+          <div class="pt-8 mt-8 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Sistema Interno OnboardContábil • Documento de Acompanhamento</span>
+            <span>Página 1 de 1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO ONBOARDING -->
+  <div id="modal-novo-cliente" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden animate-in">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center"><i data-lucide="user-plus" class="w-5 h-5"></i></div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Abrir Novo Onboarding</h3>
+            <p class="text-xs text-slate-500">Dados do cliente, escopo contratado e distribuição de responsáveis</p>
+          </div>
+        </div>
+        <button onclick="fecharModalNovoCliente()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form id="form-novo-cliente" onsubmit="salvarNovoCliente(event)" class="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-700">
+        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <label class="flex items-center space-x-2.5 p-2 bg-white border rounded-lg cursor-pointer transition font-medium border-sky-600 bg-sky-50/40">
+            <input type="radio" name="tipo_empresa" value="CONSTITUIDA" checked class="text-sky-600">
+            <div>
+              <span class="block font-bold text-slate-900">Empresa Já Constituída</span>
+              <span class="text-[10px] text-slate-500">Fluxo padrão das 7 Etapas</span>
+            </div>
+          </label>
+          <label class="flex items-center space-x-2.5 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer transition font-medium hover:border-slate-300">
+            <input type="radio" name="tipo_empresa" value="EM_CONSTITUICAO" class="text-sky-600">
+            <div>
+              <span class="block font-bold text-slate-900">Empresa em Constituição</span>
+              <span class="text-[10px] text-slate-500">Abertura prévia contratada</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block font-semibold text-slate-800 mb-1">Razão Social *</label>
+            <input type="text" name="razao_social" required placeholder="Ex: Farmácia São Lucas LTDA" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Código no Domínio Sistemas</label>
+            <input type="text" name="codigo_dominio" placeholder="Ex: 1052" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Regime Tributário</label>
+            <select name="regime_tributario" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+              <option value="SIMPLES">Simples Nacional</option>
+              <option value="PRESUMIDO">Lucro Presumido</option>
+              <option value="REAL">Lucro Real</option>
+              <option value="MEI">MEI</option>
+              <option value="IMUNE_ISENTA">Imune / Isenta</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Nome do Contato Principal</label>
+            <input type="text" name="contato_nome" placeholder="Nome do cliente/sócio" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">WhatsApp de Cobrança</label>
+            <input type="text" name="contato_telefone" placeholder="(11) 90000-0000" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- SQUAD DO CLIENTE -->
+        <div class="bg-sky-50/60 p-4 rounded-xl border border-sky-200 space-y-3">
+          <div class="flex items-center space-x-2 text-sky-900 font-bold">
+            <i data-lucide="users" class="w-4 h-4 text-sky-600"></i>
+            <span>Squad do Cliente (Distribuição de Responsáveis)</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Paralegal:</label>
+              <select name="resp_paralegal_id" class="select-colab-paralegal w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Fiscal:</label>
+              <select name="resp_fiscal_id" class="select-colab-fiscal w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Pessoal / DP:</label>
+              <select name="resp_pessoal_id" class="select-colab-pessoal w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Contábil:</label>
+              <select name="resp_contabil_id" class="select-colab-contabil w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></select>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1.5">Módulos Contratados:</label>
+          <div class="flex flex-wrap gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <label class="flex items-center space-x-1.5 cursor-pointer font-medium"><input type="checkbox" name="tem_paralegal" checked class="rounded text-sky-600"> <span>Paralegal</span></label>
+            <label class="flex items-center space-x-1.5 cursor-pointer font-medium"><input type="checkbox" name="tem_fiscal" checked class="rounded text-sky-600"> <span>Fiscal</span></label>
+            <label class="flex items-center space-x-1.5 cursor-pointer font-medium"><input type="checkbox" name="tem_pessoal" checked class="rounded text-sky-600"> <span>Pessoal / DP</span></label>
+            <label class="flex items-center space-x-1.5 cursor-pointer font-medium"><input type="checkbox" name="tem_contabil" checked class="rounded text-sky-600"> <span>Contábil</span></label>
+            <label class="flex items-center space-x-1.5 cursor-pointer font-medium"><input type="checkbox" name="tem_terceiro_setor" class="rounded text-sky-600"> <span>3º Setor</span></label>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-3 border-t border-slate-200">
+          <button type="button" onclick="fecharModalNovoCliente()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold shadow-sm transition">Iniciar Onboarding</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PRAZO EM LOTE POR ETAPA -->
+  <div id="modal-prazo-etapa" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border border-slate-200 overflow-hidden animate-in">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <h3 class="font-bold text-slate-900 text-base" id="titulo-modal-prazo-etapa">Prazo para a Etapa</h3>
+        <button onclick="fecharModalPrazoEtapa()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs text-slate-700">
+        <p class="text-slate-600">Escolha a data limite para todas as atividades desta etapa:</p>
+        <input type="date" id="input-prazo-lote-data" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-none">
+
+        <div class="flex justify-end space-x-2 pt-2">
+          <button onclick="fecharModalPrazoEtapa()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium">Cancelar</button>
+          <button onclick="aplicarPrazoLoteEtapa()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold shadow-sm">Aplicar na Etapa Inteira</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PAUTA WHATSAPP -->
+  <div id="modal-pauta-cobranca" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col border border-slate-200 overflow-hidden animate-in">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-emerald-50">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="message-square" class="w-5 h-5"></i></div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Pauta de Cobrança para WhatsApp</h3>
+            <p class="text-xs text-slate-500">Consolidado de itens faltantes com o cliente</p>
+          </div>
+        </div>
+        <button onclick="fecharModalPautaCobranca()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <textarea id="pauta-texto-conteudo" readonly rows="12" class="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs text-slate-800 leading-relaxed focus:outline-none"></textarea>
+        <div class="flex justify-between items-center">
+          <span id="pauta-contador-itens" class="text-xs text-slate-500">0 pendências</span>
+          <button onclick="copiarPautaCobranca()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition"><i data-lucide="copy" class="w-4 h-4 inline mr-1"></i> <span id="btn-copiar-texto">Copiar Mensagem</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: FICHA SOCIETÁRIA & ABERTURA DE EMPRESA -->
+  <!-- ======================================================== -->
+  <div id="modal-ficha-abertura" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[94vh] flex flex-col border border-slate-200 overflow-hidden animate-in">
+      
+      <!-- CABEÇALHO DO MODAL -->
+      <div class="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 flex-shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-sm flex-shrink-0">
+            <i data-lucide="file-signature" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 class="font-bold text-slate-900 text-base" id="abertura-modal-titulo">Ficha Societária & Abertura de Empresa</h3>
+              <span id="abertura-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Em Constituição</span>
+            </div>
+            <p class="text-xs text-slate-500" id="abertura-modal-subtitulo">Playbook completo para viabilidade, DBE, Junta Comercial e formalização</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- COPIAR LINK COLETA CLIENTE -->
+          <button onclick="copiarLinkColetaCliente()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold transition" title="Copiar link sem login para o cliente preencher dados e enviar documentos">
+            <i data-lucide="share-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span id="btn-copiar-link-coleta">Link WhatsApp (Cliente)</span>
+          </button>
+
+          <!-- GERAR DOSSIÊ JUNTA -->
+          <button onclick="abrirModalDossieJunta()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 rounded-lg text-xs font-semibold transition">
+            <i data-lucide="file-text" class="w-3.5 h-3.5 text-sky-600"></i>
+            <span>Dossiê da Junta</span>
+          </button>
+
+          <!-- CONCLUIR ABERTURA -->
+          <button onclick="concluirProcessoAbertura()" id="btn-concluir-abertura" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            <span>Concluir Abertura</span>
+          </button>
+
+          <button onclick="fecharModalFichaAbertura()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- CORPO COM ABAS INTERNAS -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-slate-700">
+        
+        <!-- AVISO DE SOMENTE LEITURA PARA TÉCNICOS NÃO PARALEGAL -->
+        <div id="aviso-ficha-somente-leitura" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex items-center space-x-3 text-amber-900 shadow-2xs">
+          <i data-lucide="shield-alert" class="w-5 h-5 text-amber-600 flex-shrink-0"></i>
+          <div>
+            <span class="font-bold text-xs">Modo de Leitura (Restrição de Acesso)</span>
+            <p class="text-[11px] text-amber-800">Alterações cadastrais societárias e upload de contratos são restritos ao setor Paralegal e Coordenação.</p>
+          </div>
+        </div>
+
+        <!-- INFORMAÇÕES PREENCHIDAS PELO CLIENTE (NOTIFICAÇÃO/DESTAQUE) -->
+        <div id="card-dados-cliente-envio" class="hidden bg-sky-50 border border-sky-300 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-sky-950 flex items-center space-x-2 text-xs">
+              <i data-lucide="inbox" class="w-4 h-4 text-sky-600"></i>
+              <span id="txt-data-envio-cliente">Informações Enviadas pelo Cliente via Link</span>
+            </span>
+            <div class="flex items-center space-x-2">
+              <span id="badge-veracidade-cliente" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">✓ Declaração de Veracidade Confirmada</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-200 text-sky-900">Formulário Externo Respondido</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-white p-3.5 rounded-lg border border-sky-200">
+            <div class="md:col-span-2 space-y-2">
+              <div>
+                <span class="block text-[10px] font-bold text-slate-500 uppercase">Atividades Descritas pelo Cliente (Pergunta 42):</span>
+                <p id="txt-atividades-cliente" class="text-slate-800 font-medium italic mt-0.5 leading-relaxed bg-slate-50 p-2.5 rounded border border-slate-200"></p>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">Divisão de Quotas (Pergunta 41):</span>
+                  <p id="txt-quotas-cliente" class="text-slate-700 font-semibold text-xs mt-0.5"></p>
+                </div>
+                <div>
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">Observações Adicionais:</span>
+                  <p id="txt-obs-cliente" class="text-slate-700 italic text-xs mt-0.5"></p>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <div class="flex items-center justify-between text-[11px] text-slate-600">
+                <span>Faturamento Est.:</span>
+                <strong id="txt-fat-cliente" class="text-emerald-700">R$ 0,00</strong>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-600">
+                <span>Funcionários Iniciais:</span>
+                <strong id="txt-func-cliente" class="text-slate-800">0</strong>
+              </div>
+              <div class="pt-1.5 border-t border-slate-200">
+                <span class="block text-[10px] font-bold text-slate-500 uppercase">Senha GOV.BR informada:</span>
+                <div class="flex items-center justify-between mt-1">
+                  <span id="txt-senha-gov-cliente" class="font-mono text-xs font-bold text-sky-900 bg-white px-2 py-0.5 rounded border border-slate-200">••••••••</span>
+                  <button type="button" onclick="copiarSenhaGovCliente()" class="text-[10px] text-sky-600 hover:underline font-semibold ml-2">Copiar</button>
+                </div>
+              </div>
+              <div id="box-resp-tec-cliente" class="hidden pt-1.5 border-t border-slate-200 text-[10px] text-purple-900">
+                <strong>Responsável Técnico:</strong> <span id="txt-resp-tec-cliente"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROTOCOLOS & ESTEIRA EM DESTAQUE -->
+        <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-amber-950 flex items-center space-x-2">
+              <i data-lucide="git-commit" class="w-4 h-4 text-amber-600"></i>
+              <span>Esteira de Protocolos & Andamentos da Constituição</span>
+            </h4>
+            <span class="text-[11px] text-amber-800 font-medium">Atualize os números à medida que os órgãos aprovarem</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Viabilidade</label>
+              <select id="abr-status-viabilidade" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs font-semibold">
+                <option value="PENDENTE">Pendente</option>
+                <option value="EM_ANALISE">Em Análise</option>
+                <option value="APROVADA">✓ Aprovada</option>
+                <option value="REJEITADA">✕ Rejeitada</option>
+              </select>
+              <input type="text" id="abr-proto-viabilidade" placeholder="Nº Protocolo" class="mt-1 w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px]">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">DBE (Redesim)</label>
+              <input type="text" id="abr-proto-dbe" placeholder="Nº Protocolo DBE" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Junta / Cartório</label>
+              <input type="text" id="abr-proto-junta" placeholder="Nº Protocolo Junta" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">CNPJ Emitido</label>
+              <input type="text" id="abr-cnpj-gerado" placeholder="00.000.000/0001-00" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-emerald-800">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Inscrição Mun.</label>
+              <input type="text" id="abr-insc-municipal" placeholder="Nº CCM / IM" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Alvará & Licenças</label>
+              <select id="abr-status-alvara" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs font-semibold">
+                <option value="PENDENTE">Pendente</option>
+                <option value="DISPENSADO">Dispensado</option>
+                <option value="PROTOCOLADO">Protocolado</option>
+                <option value="DEFERIDO">✓ Deferido</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO 1: RAZÃO SOCIAL, ATIVIDADES E CAPITAL -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-2xs">
+          <div class="flex items-center space-x-2 border-b border-slate-100 pb-2">
+            <i data-lucide="building" class="w-4 h-4 text-sky-600"></i>
+            <h4 class="font-bold text-slate-900 text-sm">1. Opções de Razão Social & Objeto da Empresa</h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">1ª Opção de Razão Social *</label>
+              <input type="text" id="abr-razao-op1" placeholder="Ex: Silva & Santos Serviços Médicos LTDA" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">2ª Opção (Suplente)</label>
+              <input type="text" id="abr-razao-op2" placeholder="Ex: S&S Clínica Médica LTDA" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">3ª Opção (Suplente)</label>
+              <input type="text" id="abr-razao-op3" placeholder="Ex: Clínica Santos & Silva LTDA" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Nome Fantasia</label>
+              <input type="text" id="abr-nome-fantasia" placeholder="Nome comercial da marca" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Natureza Jurídica</label>
+              <select id="abr-natureza-juridica" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+                <option value="LTDA">Sociedade Limitada (LTDA)</option>
+                <option value="SLU">Sociedade Limitada Unipessoal (SLU)</option>
+                <option value="EI">Empresário Individual (EI)</option>
+                <option value="SA">Sociedade Anônima (S/A)</option>
+                <option value="SIMPLES_PURA">Sociedade Simples Pura</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Capital Social (R$)</label>
+              <input type="number" step="0.01" id="abr-capital-social" placeholder="10000.00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Divisão de Quotas</label>
+              <input type="text" id="abr-divisao-quotas" placeholder="Ex: 10.000 quotas a R$ 1,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+
+          <!-- ÁREA DE PESQUISA E ENQUADRAMENTO DE CNAEs (EXCLUSIVO CONTABILIDADE) -->
+          <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-4 space-y-3 mt-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="search" class="w-4 h-4 text-indigo-600"></i>
+                <h5 class="font-bold text-indigo-950 text-xs">Pesquisa de CNAEs & Enquadramento Simples Nacional (Uso Interno)</h5>
+              </div>
+              <span class="text-[10px] text-indigo-700 font-medium">Catálogo integrado • Anexos e Fator R automáticos</span>
+            </div>
+
+            <div class="relative">
+              <input type="text" id="abr-busca-cnae-input" placeholder="🔍 Digite a atividade ou código para pesquisar (ex: marketing, software, clínica, 4711, restaurante, engenharia...)" oninput="buscarCnaesTempoReal(this.value)" class="w-full px-3.5 py-2.5 bg-white border border-indigo-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-xs">
+              <div id="dropdown-resultados-cnae" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-300 rounded-xl shadow-xl max-h-64 overflow-y-auto z-30 p-2 space-y-2"></div>
+            </div>
+
+            <!-- CNAE PRINCIPAL SELECIONADO & SECUNDÁRIOS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div class="bg-white p-3 rounded-lg border border-indigo-200 space-y-1">
+                <span class="block text-[10px] font-bold text-indigo-900 uppercase">CNAE Principal Definido:</span>
+                <div id="box-cnae-principal" class="text-xs font-semibold text-slate-800">
+                  <span class="text-slate-400 italic">Nenhum CNAE principal definido ainda.</span>
+                </div>
+                <input type="hidden" id="abr-cnae-principal">
+              </div>
+
+              <div class="bg-white p-3 rounded-lg border border-indigo-200 space-y-1">
+                <span class="block text-[10px] font-bold text-indigo-900 uppercase">CNAEs Secundários:</span>
+                <div id="lista-cnaes-secundarios" class="flex flex-wrap gap-1.5 min-h-[28px] items-center">
+                  <span class="text-slate-400 italic text-xs">Nenhum secundário adicionado.</span>
+                </div>
+                <input type="hidden" id="abr-cnaes-secundarios">
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Descrição do Objeto Social (Para o Contrato Social)</label>
+              <textarea id="abr-atividades-desc" rows="3" placeholder="Descreva as atividades para a redação do contrato..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"></textarea>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">CNAEs Compilados / Observações Tributárias</label>
+              <textarea id="abr-cnaes-sugeridos" rows="3" placeholder="Lista consolidada de CNAEs para o integrador estadual..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO 2: ENDEREÇO DA EMPRESA & DADOS DO IMÓVEL -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-2xs">
+          <div class="flex items-center space-x-2 border-b border-slate-100 pb-2">
+            <i data-lucide="map-pin" class="w-4 h-4 text-emerald-600"></i>
+            <h4 class="font-bold text-slate-900 text-sm">2. Endereço da Sede & Dados do Imóvel (Para Viabilidade)</h4>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block font-medium text-slate-700 mb-1">CEP (Busca Automática) *</label>
+              <input type="text" id="abr-cep-empresa" placeholder="00000-000" oninput="formatarEAutobuscarCep(this, 'empresa')" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div class="sm:col-span-3">
+              <label class="block font-medium text-slate-700 mb-1">Logradouro (Rua / Av.)</label>
+              <input type="text" id="abr-rua-empresa" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Número</label>
+              <input type="text" id="abr-num-empresa" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Complemento / Sala</label>
+              <input type="text" id="abr-comp-empresa" placeholder="Ex: Sala 402" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Ponto de Referência</label>
+              <input type="text" id="abr-ref-empresa" placeholder="Ex: Próximo ao metrô" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Bairro</label>
+              <input type="text" id="abr-bairro-empresa" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <div>
+                <label class="block font-medium text-slate-700 mb-1">Cidade</label>
+                <input type="text" id="abr-cidade-empresa" class="w-full px-2 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+              </div>
+              <div>
+                <label class="block font-medium text-slate-700 mb-1">UF</label>
+                <input type="text" id="abr-uf-empresa" maxlength="2" placeholder="SP" class="w-full px-2 py-2 bg-white border border-slate-300 rounded-lg text-xs uppercase font-semibold">
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Tipo de Imóvel</label>
+              <select id="abr-tipo-imovel" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+                <option value="PROPRIO">Próprio dos Sócios</option>
+                <option value="ALUGADO">Alugado / Locado</option>
+                <option value="VIRTUAL">Escritório Virtual / Coworking</option>
+                <option value="CEDIDO">Cedido / Comodato</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">IPTU / Inscrição Imobiliária *</label>
+              <input type="text" id="abr-insc-iptu" placeholder="Nº no carnê de IPTU" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Nome do Proprietário / Locador</label>
+              <input type="text" id="abr-proprietario-nome" placeholder="Nome / Razão do locador" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">CPF ou CNPJ do Proprietário</label>
+              <input type="text" id="abr-proprietario-doc" placeholder="000.000.000-00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO 3: QUADRO SOCIETÁRIO & SÓCIOS -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-2xs">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="users" class="w-4 h-4 text-purple-600"></i>
+              <h4 class="font-bold text-slate-900 text-sm">3. Quadro Societário & Qualificação dos Sócios</h4>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div id="badge-total-quotas" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                Total Quotas: 0%
+              </div>
+              <button type="button" id="btn-adicionar-socio-abertura" onclick="adicionarNovoSocioAbertura()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 rounded-lg text-xs font-bold transition">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5 text-purple-600"></i>
+                <span>+ Adicionar Sócio</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- LISTA DINÂMICA DE SÓCIOS -->
+          <div id="lista-socios-abertura" class="space-y-4"></div>
+        </div>
+
+        <!-- SEÇÃO 4: CERTIFICAÇÃO, RESPONSÁVEL TÉCNICO & GOV.BR -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-2xs">
+          <div class="flex items-center space-x-2 border-b border-slate-100 pb-2">
+            <i data-lucide="key" class="w-4 h-4 text-sky-600"></i>
+            <h4 class="font-bold text-slate-900 text-sm">4. Acessos GOV.BR, Certificados e Responsabilidade Técnica</h4>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="flex items-center space-x-2 font-semibold text-slate-800 mb-1">
+                <input type="checkbox" id="abr-possui-certificado" class="rounded text-sky-600">
+                <span>Sócios possuem e-CPF (Certificado)</span>
+              </label>
+              <p class="text-[11px] text-slate-500">Necessário para assinatura digital de contratos e atos na Junta.</p>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-800 mb-1">Senha GOV.BR dos Sócios (Nível Prata/Ouro)</label>
+              <input type="password" id="abr-senha-gov" placeholder="Senha gov.br para DBE" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+              <p class="text-[10px] text-slate-400 mt-0.5">Utilizada pela equipe paralegal para protocolo no portal e-CAC.</p>
+            </div>
+
+            <div>
+              <label class="flex items-center space-x-2 font-semibold text-slate-800 mb-1">
+                <input type="checkbox" id="abr-possui-resp-tecnico" onchange="toggleRespTecnicoCampos(this.checked)" class="rounded text-sky-600">
+                <span>Atividade exige Responsável Técnico</span>
+              </label>
+              <p class="text-[11px] text-slate-500">Ex: Medicina (CRM), Farmácia (CRF), Engenharia (CREA).</p>
+            </div>
+          </div>
+
+          <div id="container-resp-tecnico" class="hidden grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <div class="sm:col-span-2">
+              <label class="block font-medium text-slate-700 mb-1">Nome do Responsável Técnico</label>
+              <input type="text" id="abr-resp-tec-nome" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">CPF</label>
+              <input type="text" id="abr-resp-tec-cpf" placeholder="000.000.000-00" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Conselho (Ex: CRM)</label>
+              <input type="text" id="abr-resp-tec-conselho" placeholder="CRM, CREA, OAB" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs">
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <div>
+                <label class="block font-medium text-slate-700 mb-1">Número</label>
+                <input type="text" id="abr-resp-tec-numero" placeholder="123456" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+              </div>
+              <div>
+                <label class="block font-medium text-slate-700 mb-1">UF</label>
+                <input type="text" id="abr-resp-tec-estado" maxlength="2" placeholder="SP" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs uppercase font-semibold">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO 5: DOCUMENTOS & ANEXOS RECEBIDOS -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-2xs">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="paperclip" class="w-4 h-4 text-emerald-600"></i>
+              <h4 class="font-bold text-slate-900 text-sm">5. Documentos & Anexos Recebidos (RG/CNH, Comprovantes, IPTU, etc.)</h4>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button type="button" onclick="gerarCobrancaDocumentosFaltantes()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold transition" title="Copiar mensagem para o WhatsApp solicitando apenas os documentos pendentes">
+                <i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span>Cobrar Anexos Faltantes no WhatsApp</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- LISTA DINÂMICA DE DOCUMENTOS RECEBIDOS E STATUS -->
+          <div id="grade-documentos-abertura" class="space-y-2"></div>
+        </div>
+
+      </div>
+
+      <!-- RODAPÉ DO MODAL -->
+      <div class="px-6 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+        <span class="text-xs text-slate-500">As alterações são salvas automaticamente na base de dados do escritório.</span>
+        <div class="flex items-center space-x-2">
+          <button type="button" onclick="fecharModalFichaAbertura()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium transition text-xs">Fechar</button>
+          <button type="button" id="btn-salvar-ficha-abertura" onclick="salvarFichaAberturaCompleta()" class="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-bold shadow-sm transition text-xs">Salvar Ficha Societária</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: DOSSIÊ SOCIETÁRIO PARA JUNTA COMERCIAL / VRE -->
+  <!-- ======================================================== -->
+  <div id="modal-dossie-junta" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden animate-in">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-sky-50">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Dossiê Societário para a Junta Comercial</h3>
+            <p class="text-xs text-slate-500">Texto formatado pronto para copiar e colar no integrador (VRE / JUCESP / Redesim)</p>
+          </div>
+        </div>
+        <button onclick="fecharModalDossieJunta()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs flex-1 overflow-y-auto">
+        <textarea id="dossie-texto-conteudo" readonly rows="16" class="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs text-slate-800 leading-relaxed focus:outline-none"></textarea>
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-slate-500">Qualificação civil completa de todos os sócios e cláusulas básicas</span>
+          <button onclick="copiarDossieJunta()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm transition inline-flex items-center space-x-2">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span id="btn-copiar-dossie-texto">Copiar Dossiê Completo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: CONCLUIR ABERTURA (CONFIRMAÇÃO & CNPJ) -->
+  <!-- ======================================================== -->
+  <div id="modal-concluir-abertura" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-slate-200 overflow-hidden animate-in">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-emerald-50">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="check-circle-2" class="w-5 h-5"></i></div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Formalização Concluída</h3>
+            <p class="text-xs text-slate-500">Transição para Onboarding Contábil Regular</p>
+          </div>
+        </div>
+        <button onclick="fecharModalConcluirAbertura()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs text-slate-700">
+        <p class="text-slate-600">A empresa obteve o registro na Junta Comercial e o CNPJ da Receita Federal. Confirme o CNPJ definitivo para formalizar a transição para as 7 Etapas do Onboarding Contábil:</p>
+        
+        <div>
+          <label class="block font-bold text-slate-800 mb-1">CNPJ Emitido *</label>
+          <input type="text" id="input-cnpj-conclusao" placeholder="00.000.000/0001-00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-mono font-bold text-emerald-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-600 space-y-1 text-[11px]">
+          <p>✓ As atividades da Etapa 00 (Constituição) serão marcadas como concluídas.</p>
+          <p>✓ A empresa passará para a categoria <strong>Constituída</strong>.</p>
+          <p>✓ O onboarding avançará para as Etapas 01 e 02 (Diagnóstico e Documentos).</p>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2">
+          <button onclick="fecharModalConcluirAbertura()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium">Cancelar</button>
+          <button onclick="confirmarConclusaoAbertura()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm">Confirmar e Avançar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: GESTÃO & EDIÇÃO DE COLABORADOR (FOTO, ACESSOS, PERFIL, PIN) -->
+  <!-- ======================================================== -->
+  <div id="modal-colaborador-form" class="fixed inset-0 bg-[#0A213D]/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col border border-[#EDEDEB] overflow-hidden animate-in my-8">
+      <div class="px-6 py-4 border-b border-[#EDEDEB] flex items-center justify-between bg-[#F7F7F5]">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-[#0A213D] text-white flex items-center justify-center font-bold">
+            <i data-lucide="user-cog" class="w-4 h-4 text-[#C5A059]"></i>
+          </div>
+          <div>
+            <h3 id="modal-colab-titulo" class="font-bold text-[#0A213D] text-sm">Editar Perfil & Acessos do Colaborador</h3>
+            <p class="text-[11px] text-[#787774]">Configuração de foto, departamento, cargo, nível de permissão e PIN</p>
+          </div>
+        </div>
+        <button onclick="fecharModalColaboradorForm()" class="text-[#787774] hover:text-[#0A213D] p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <form id="form-colaborador" onsubmit="salvarColaboradorForm(event)" class="p-6 space-y-4 text-xs text-[#2F3437]">
+        <input type="hidden" id="colab-form-id" value="">
+        <input type="hidden" id="colab-form-foto-base64" value="">
+        <input type="hidden" id="colab-form-foto-removida" value="0">
+
+        <!-- SEÇÃO: FOTO DE PERFIL / AVATAR -->
+        <div class="p-3.5 bg-[#F7F7F5] rounded-xl border border-[#EDEDEB] flex items-center space-x-4">
+          <div id="preview-colab-avatar" class="w-16 h-16 rounded-full overflow-hidden border-2 border-[#C5A059] flex items-center justify-center bg-white shadow-xs flex-shrink-0">
+            <span class="text-sm font-bold text-[#0A213D]">FOTO</span>
+          </div>
+          <div class="space-y-1.5 flex-1">
+            <label class="block font-bold text-[#0A213D]">Foto do Colaborador</label>
+            <p class="text-[11px] text-[#787774]">Envie uma foto profissional (PNG ou JPG) para exibir em todo o sistema.</p>
+            <div class="flex items-center space-x-2 pt-1">
+              <input type="file" id="input-colab-arquivo-foto" accept="image/*" class="hidden" onchange="processarUploadFotoColab(event)">
+              <button type="button" onclick="document.getElementById('input-colab-arquivo-foto').click()" class="px-3 py-1.5 bg-white border border-[#EDEDEB] hover:bg-[#EFEFED] text-[#0A213D] rounded-lg font-semibold text-[11px] shadow-2xs transition flex items-center space-x-1.5">
+                <i data-lucide="upload" class="w-3.5 h-3.5 text-[#C5A059]"></i>
+                <span>Enviar Foto</span>
+              </button>
+              <button type="button" id="btn-remover-foto-colab" onclick="removerFotoColab()" class="px-2.5 py-1 text-[11px] text-rose-600 hover:text-rose-800 font-medium hidden">
+                Remover
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DADOS BÁSICOS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block font-bold text-[#0A213D] mb-1">Nome Completo *</label>
+            <input type="text" id="colab-form-nome" required placeholder="Ex: Lucas Mendes" class="w-full px-3 py-2 bg-white border border-[#EDEDEB] rounded-lg focus:ring-2 focus:ring-[#0A213D] focus:outline-none text-xs">
+          </div>
+
+          <div>
+            <label class="block font-bold text-[#0A213D] mb-1">Cargo / Função *</label>
+            <input type="text" id="colab-form-cargo" required placeholder="Ex: Analista Fiscal Sênior" class="w-full px-3 py-2 bg-white border border-[#EDEDEB] rounded-lg focus:ring-2 focus:ring-[#0A213D] focus:outline-none text-xs">
+          </div>
+
+          <div>
+            <label class="block font-bold text-[#0A213D] mb-1">E-mail Corporativo</label>
+            <input type="email" id="colab-form-email" placeholder="lucas@josanamota.com.br" class="w-full px-3 py-2 bg-white border border-[#EDEDEB] rounded-lg focus:ring-2 focus:ring-[#0A213D] focus:outline-none text-xs">
+          </div>
+
+          <div>
+            <label class="block font-bold text-[#0A213D] mb-1">WhatsApp / Telefone</label>
+            <input type="text" id="colab-form-telefone" placeholder="(11) 99999-9999" class="w-full px-3 py-2 bg-white border border-[#EDEDEB] rounded-lg focus:ring-2 focus:ring-[#0A213D] focus:outline-none text-xs">
+          </div>
+
+          <div>
+            <label class="block font-bold text-[#0A213D] mb-1">Cor do Avatar (Fallback)</label>
+            <div class="flex items-center space-x-2">
+              <input type="color" id="colab-form-cor" value="#0A213D" class="w-8 h-8 p-0.5 border border-[#EDEDEB] rounded-lg cursor-pointer bg-white">
+              <span class="text-[11px] text-[#787774]">Usada caso não haja foto</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETOR & NÍVEL DE ACESSO RBAC -->
+        <div class="p-3.5 bg-[#FAF6EE] rounded-xl border border-[#E8D7B5] space-y-3">
+          <div class="flex items-center space-x-2 text-[#9A7736] font-bold">
+            <i data-lucide="shield" class="w-4 h-4"></i>
+            <span>Permissões & Nível de Acesso (RBAC)</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-[#0A213D] mb-1">Departamento / Setor *</label>
+              <select id="colab-form-departamento" required class="w-full px-3 py-2 bg-white border border-[#EDEDEB] rounded-lg font-medium text-xs focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
+                <option value="PARALEGAL">PARALEGAL (Abertura & Societário)</option>
+                <option value="FISCAL">FISCAL (Tributário & SPED)</option>
+                <option value="PESSOAL">PESSOAL (DP & eSocial/Folha)</option>
+                <option value="CONTABIL">CONTABIL (Contabilidade & Balanços)</option>
+                <option value="IMPLANTACAO">IMPLANTAÇÃO (Coordenação)</option>
+                <option value="DIRETORIA">DIRETORIA (Gestão Executiva)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-[#0A213D] mb-1">Perfil de Acesso *</label>
+              <select id="colab-form-perfil" required class="w-full px-3 py-2 bg-white border border-[#EDEDEB] rounded-lg font-bold text-xs focus:ring-2 focus:ring-[#0A213D] focus:outline-none text-[#0A213D]">
+                <option value="TECNICO">🔒 TÉCNICO (Somente suas tarefas & empresas)</option>
+                <option value="ONBOARDING">🚀 ONBOARDING (Acesso a todos os clientes)</option>
+                <option value="GESTOR">👑 GESTOR (Acesso Total irrestrito)</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="text-[11px] text-[#8F6C27] leading-relaxed">
+            • <strong>Técnico:</strong> Focado no seu próprio Cockpit e nas tarefas do seu setor.<br>
+            • <strong>Onboarding:</strong> Acompanha a carteira inteira e pode avançar todas as etapas.<br>
+            • <strong>Gestor:</strong> Controle executivo total, relatórios, configurações de IA e gestão da equipe.
+          </p>
+        </div>
+
+        <!-- SEGURANÇA: PIN & STATUS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block font-bold text-[#0A213D]">PIN de Acesso Individual</label>
+              <button type="button" onclick="document.getElementById('colab-form-pin').value = '1234'" class="text-[10px] text-sky-700 hover:underline font-semibold">Redefinir 1234</button>
+            </div>
+            <input type="text" id="colab-form-pin" maxlength="8" placeholder="1234" class="w-full px-3 py-2 bg-white border border-[#EDEDEB] rounded-lg text-xs font-mono font-bold text-[#0A213D] focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-bold text-[#0A213D] mb-1">Status da Conta</label>
+            <select id="colab-form-ativo" class="w-full px-3 py-2 bg-white border border-[#EDEDEB] rounded-lg font-semibold text-xs focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
+              <option value="1">✓ Ativo (Acesso Liberado)</option>
+              <option value="0">✕ Inativo (Acesso Revogado)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#EDEDEB] flex items-center justify-end space-x-2">
+          <button type="button" onclick="fecharModalColaboradorForm()" class="px-3.5 py-2 border border-[#EDEDEB] rounded-lg text-[#787774] hover:bg-[#F7F7F5] font-medium transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-5 py-2 bg-[#0A213D] hover:bg-[#153358] text-white font-bold rounded-lg shadow-xs transition flex items-center space-x-1.5">
+            <i data-lucide="check" class="w-4 h-4 text-[#C5A059]"></i>
+            <span>Salvar Colaborador & Permissões</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL / DRAWER: CHAT DE DÚVIDAS COM IA (SARA) -->
+  <!-- ======================================================== -->
+  <div id="modal-chat-ia" class="fixed inset-0 bg-[#0A213D]/40 backdrop-blur-2xs z-50 hidden flex items-end sm:items-center justify-end p-0 sm:p-5">
+    <div class="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md h-[88vh] sm:h-[640px] flex flex-col border border-[#EDEDEB] overflow-hidden animate-in">
+      
+      <!-- CABEÇALHO DO CHAT -->
+      <div class="px-5 py-3.5 border-b border-[#EDEDEB] bg-[#0A213D] text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-full bg-[#C5A059] text-[#0A213D] font-extrabold flex items-center justify-center text-xs shadow-xs">
+            JM
+          </div>
+          <div>
+            <div class="flex items-center space-x-1.5">
+              <h3 class="font-bold text-xs">Sara • Suporte & IA</h3>
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            </div>
+            <p class="text-[10px] text-white/80">Especialista no Sistema Josana Mota</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="abrirManualCompletoPeloChat()" class="text-[11px] text-[#DFC48B] hover:text-white px-2 py-0.5 rounded transition font-semibold" title="Abrir Manual Completo">
+            Ver Manual
+          </button>
+          <button onclick="fecharChatSuporteIA()" class="text-white/80 hover:text-white p-1 rounded-lg">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- CORPO DE MENSAGENS -->
+      <div id="chat-ia-mensagens" class="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs bg-[#FAFAF9]">
+        <!-- Mensagem de Boas-vindas -->
+        <div class="flex items-start space-x-2">
+          <div class="w-6 h-6 rounded-full bg-[#C5A059] text-[#0A213D] font-bold text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
+            IA
+          </div>
+          <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-[#EDEDEB] text-[#2F3437] max-w-[88%] space-y-1.5 shadow-2xs">
+            <p class="font-bold text-[#0A213D]">Olá! Sou a Sara, assistente do sistema Josana Mota.</p>
+            <p class="text-[11px] text-[#787774] leading-relaxed">Tire dúvidas sobre como usar qualquer parte do sistema, atalhos, envio de link de WhatsApp, CNAEs, Cockpit e prazos.</p>
+          </div>
+        </div>
+
+        <!-- Chips de Dúvidas & Demandas Operacionais -->
+        <div class="pt-2">
+          <span class="block text-[10px] font-bold text-[#787774] uppercase tracking-wider mb-2">Perguntas & Demandas:</span>
+          <div class="flex flex-col gap-1.5">
+            <button onclick="enviarMensagemRapidaChat('Para que serve este sistema e como ele funciona?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
+              <span>🌟</span>
+              <span class="font-semibold text-[#0A213D]">Para que serve este sistema?</span>
+            </button>
+            <button onclick="enviarMensagemRapidaChat('Chegou um cliente novo que vai abrir empresa com sócios, o que fazer?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
+              <span>🏢</span>
+              <span class="font-medium">Demanda: Novo cliente quer abrir empresa com sócios</span>
+            </button>
+            <button onclick="enviarMensagemRapidaChat('O cliente já enviou os dados pelo WhatsApp, qual o próximo passo?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
+              <span>📥</span>
+              <span class="font-medium">Demanda: Cliente mandou documentos, o que fazer?</span>
+            </button>
+            <button onclick="enviarMensagemRapidaChat('A Junta Comercial aprovou a abertura e saiu o CNPJ, o que faço?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
+              <span>🏛️</span>
+              <span class="font-medium">Demanda: Junta aprovou e saiu o CNPJ</span>
+            </button>
+            <button onclick="enviarMensagemRapidaChat('Como enviar o link pro cliente responder pelo WhatsApp?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
+              <span>📱</span>
+              <span class="font-medium">Como enviar o link pro cliente pelo WhatsApp?</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT DE ENVIO -->
+      <form id="form-chat-ia" onsubmit="enviarMensagemChatIA(event)" class="p-3 border-t border-[#EDEDEB] bg-white flex items-center space-x-2 flex-shrink-0">
+        <input type="text" id="input-chat-ia-texto" placeholder="Digite sua dúvida sobre o sistema..." class="flex-1 px-3 py-2 bg-[#F7F7F5] border border-[#EDEDEB] rounded-xl text-xs focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
+        <button type="submit" id="btn-enviar-chat-ia" class="p-2 bg-[#0A213D] hover:bg-[#153358] text-white rounded-xl shadow-xs transition" title="Enviar Pergunta">
+          <i data-lucide="send" class="w-4 h-4 text-[#C5A059]"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- BOTÃO FLUTUANTE DE AJUDA & DÚVIDAS COM IA -->
+  <button onclick="abrirChatSuporteIA()" id="btn-floating-chat-ia" class="fixed bottom-6 right-6 z-40 bg-[#0A213D] hover:bg-[#153358] text-white px-4 py-2.5 rounded-full shadow-lg border border-[#C5A059] flex items-center space-x-2 text-xs font-bold transition transform hover:scale-105 active:scale-95 no-print" title="Tirar dúvidas com a IA do Sistema">
+    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+    <i data-lucide="sparkles" class="w-4 h-4 text-[#C5A059]"></i>
+    <span>Dúvidas do Sistema (IA)</span>
+  </button>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none no-print"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

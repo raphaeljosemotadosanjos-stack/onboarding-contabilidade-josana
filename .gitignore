@@ -1,0 +1,15 @@
+# Dependências
+node_modules/
+
+# Ferramentas locais
+mingit/
+cloudflared.exe
+*.log
+tunnel_output.log
+test.txt
+test_literal.txt
+
+# Backups e temporários
+database.sqlite.backup
+.DS_Store
+Thumbs.db

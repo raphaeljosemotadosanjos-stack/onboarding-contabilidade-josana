@@ -1,0 +1,351 @@
+/* =========================================================================
+   JOSANA MOTA CONTABILIDADE — ESTILO NOTION MINIMALISTA & PALETA DA MARCA
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Paleta Oficial Josana Mota Contabilidade */
+  --jm-navy: #0A213D;
+  --jm-navy-dark: #061629;
+  --jm-navy-light: #153358;
+  --jm-navy-subtle: #F0F4F8;
+  --jm-gold: #C5A059;
+  --jm-gold-dark: #9A7736;
+  --jm-gold-light: #DFC48B;
+  --jm-gold-subtle: #FAF6EE;
+  --jm-gold-border: #E8D7B5;
+  --jm-white: #FFFFFF;
+
+  /* Notion Minimalist Neutrals */
+  --notion-canvas: #FFFFFF;
+  --notion-bg: #FAFAF9;
+  --notion-sidebar: #F7F7F5;
+  --notion-border: #EDEDEB;
+  --notion-hover: #EFEFED;
+  --notion-text: #2F3437;
+  --notion-muted: #787774;
+  --notion-subtle: #9B9A97;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--notion-bg);
+  color: var(--notion-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar minimalista estilo Notion */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 119, 116, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 119, 116, 0.4);
+}
+
+/* Transições suaves e naturais */
+.nav-item, button, .cliente-card, .kanban-card, input, select {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Animações sutis */
+@keyframes fadeInZoom {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-in {
+  animation: fadeInZoom 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Cartões minimalistas estilo Notion */
+.notion-card {
+  background: #ffffff;
+  border: 1px solid var(--notion-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease-in-out;
+}
+.notion-card:hover {
+  border-color: #D3D2CE;
+}
+
+/* Estilo do Menu Lateral (Sidebar Notion) */
+.notion-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--notion-muted);
+  transition: all 0.12s ease;
+}
+.notion-nav-item:hover {
+  background-color: var(--notion-hover);
+  color: var(--jm-navy);
+}
+.notion-nav-item.ativo {
+  background-color: #0A213D;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(10, 33, 61, 0.2);
+}
+
+/* Badges da marca Josana Mota */
+.badge-gold {
+  background-color: var(--jm-gold-subtle);
+  color: var(--jm-gold-dark);
+  border: 1px solid var(--jm-gold-border);
+}
+
+.badge-navy {
+  background-color: var(--jm-navy-subtle);
+  color: var(--jm-navy);
+  border: 1px solid rgba(10, 33, 61, 0.15);
+}
+
+/* =========================================================================
+   NOTION DARK MODE THEME — JOSANA MOTA CONTABILIDADE
+   ========================================================================= */
+html.dark {
+  --notion-canvas: #191919;
+  --notion-bg: #191919;
+  --notion-sidebar: #202020;
+  --notion-border: #333330;
+  --notion-hover: #2F3437;
+  --notion-text: #E6E6E5;
+  --notion-muted: #9B9A97;
+  --notion-subtle: #787774;
+
+  --jm-navy: #153358;
+  --jm-navy-dark: #0A213D;
+  --jm-navy-subtle: #1C2B3C;
+  --jm-gold-subtle: #2A2416;
+  --jm-gold-border: #524223;
+  --jm-white: #202020;
+}
+
+html.dark body {
+  background-color: #191919 !important;
+  color: #E6E6E5 !important;
+}
+
+/* Sidebar & Header em Modo Noturno */
+html.dark aside,
+html.dark header {
+  background-color: #202020 !important;
+  border-color: #333330 !important;
+}
+
+/* Blocos brancos viram cartões escuros estilo Notion */
+html.dark .bg-white {
+  background-color: #202020 !important;
+  color: #E6E6E5 !important;
+}
+
+html.dark .bg-[#FAFAF9] {
+  background-color: #191919 !important;
+}
+
+html.dark .bg-[#F7F7F5] {
+  background-color: #252525 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/60 {
+  background-color: #262626 !important;
+}
+
+html.dark .border-[#EDEDEB],
+html.dark .border-slate-200,
+html.dark .border-slate-100,
+html.dark .border-slate-300 {
+  border-color: #333330 !important;
+}
+
+/* Textos adaptados para Dark Mode */
+html.dark .text-[#0A213D],
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-[#2F3437] {
+  color: #F0F0EE !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-[#606770],
+html.dark .text-slate-600 {
+  color: #D3D3D0 !important;
+}
+
+html.dark .text-[#787774],
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #9B9A97 !important;
+}
+
+/* Formulários & Campos de Entrada */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark input[type="date"],
+html.dark select,
+html.dark textarea {
+  background-color: #252525 !important;
+  border-color: #3D3D3A !important;
+  color: #FFFFFF !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #6E6D6A !important;
+}
+
+html.dark select option {
+  background-color: #252525 !important;
+  color: #FFFFFF !important;
+}
+
+/* Notion Cards no tema escuro */
+html.dark .notion-card {
+  background-color: #202020 !important;
+  border-color: #333330 !important;
+}
+
+html.dark .notion-card:hover {
+  border-color: #4D4D47 !important;
+}
+
+/* Hover de Itens do Menu */
+html.dark .hover\:bg-\[\#EFEFED\]:hover,
+html.dark .hover\:bg-\[\#F7F7F5\]:hover {
+  background-color: #2F3437 !important;
+}
+
+/* Badges e Destaques Dourados */
+html.dark .bg-\[\#FAF6EE\] {
+  background-color: #262117 !important;
+}
+
+html.dark .border-\[\#E8D7B5\] {
+  border-color: #4D3F23 !important;
+}
+
+html.dark .text-\[\#9A7736\],
+html.dark .text-\[\#8F6C27\] {
+  color: #DFC48B !important;
+}
+
+/* Monograma Josana Mota no Dark Mode */
+html.dark .logo-monograma-box {
+  background-color: #262626 !important;
+  border-color: #3D3D3A !important;
+}
+
+/* Scrollbar Dark */
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(180, 180, 180, 0.2);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 180, 180, 0.4);
+}
+
+/* Modais no Dark Mode */
+html.dark .modal-content-dark {
+  background-color: #202020 !important;
+  border-color: #37352F !important;
+}
+.folha-documento-pdf {
+  background: #ffffff;
+  box-shadow: 0 10px 30px -5px rgba(10, 33, 61, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+.pdf-timbrado-header {
+  border-bottom: 2px solid var(--jm-gold);
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.pdf-secao-card {
+  background: #fafaf9;
+  border: 1px solid var(--notion-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.pdf-secao-card h4 {
+  color: var(--jm-navy);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pdf-badge-sucesso {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.pdf-badge-alerta {
+  background: var(--jm-gold-subtle);
+  color: var(--jm-gold-dark);
+  border: 1px solid var(--jm-gold-border);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.pdf-badge-erro {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* =========================================================================
+   SUPORTE A IMPRESSÃO E SALVAMENTO EM PDF (WINDOW.PRINT)
+   ========================================================================= */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #folha-pdf-imprimivel, #folha-pdf-imprimivel * {
+    visibility: visible;
+  }
+  #folha-pdf-imprimivel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 15mm;
+    box-shadow: none;
+    border: none;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
