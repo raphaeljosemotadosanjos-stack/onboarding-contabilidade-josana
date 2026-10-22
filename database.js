@@ -307,7 +307,7 @@ if (!configQuery.get('caminho_base_servidor')) {
 const countColabs = db.prepare('SELECT COUNT(*) as count FROM colaboradores').get().count;
 if (countColabs === 0) {
   const insColab = db.prepare('INSERT INTO colaboradores (id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  insColab.run('colab_0', 'Eduardo Rocha', 'DIRETORIA', 'Gestor Geral & Diretor', 'eduardo@josanamota.com.br', '(11) 98888-1000', '1234', '#4f46e5', 'GESTOR');
+  insColab.run('colab_0', 'Raphael José', 'DIRETORIA', 'Gestor Geral & Diretor Executivo', 'raphaeljosemotadosanjos@gmail.com', '(11) 98888-1000', '1234', '#0A213D', 'GESTOR');
   insColab.run('colab_1', 'Mariana Silva', 'IMPLANTACAO', 'Coordenadora de Implantação', 'mariana@josanamota.com.br', '(11) 98888-1001', '1234', '#0284c7', 'ONBOARDING');
   insColab.run('colab_2', 'Lucas Mendes', 'FISCAL', 'Analista Fiscal Sênior', 'lucas@josanamota.com.br', '(11) 98888-1002', '1234', '#059669', 'TECNICO');
   insColab.run('colab_3', 'Carla Souza', 'PESSOAL', 'Analista de DP / Folha', 'carla@josanamota.com.br', '(11) 98888-1003', '1234', '#2563eb', 'TECNICO');
@@ -320,7 +320,7 @@ if (countColabs === 0) {
       db.prepare(`
         INSERT INTO colaboradores (id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run('colab_0', 'Eduardo Rocha', 'DIRETORIA', 'Gestor Geral & Diretor', 'eduardo@escritorio.com.br', '(11) 98888-1000', '1234', '#4f46e5', 'GESTOR');
+      `).run('colab_0', 'Raphael José', 'DIRETORIA', 'Gestor Geral & Diretor Executivo', 'raphaeljosemotadosanjos@gmail.com', '(11) 98888-1000', '1234', '#0A213D', 'GESTOR');
     }
     db.prepare(`UPDATE colaboradores SET perfil = 'ONBOARDING' WHERE id = 'colab_1' OR departamento = 'IMPLANTACAO'`).run();
     db.prepare(`UPDATE colaboradores SET perfil = 'TECNICO' WHERE (perfil IS NULL OR perfil = '') AND id != 'colab_0' AND id != 'colab_1'`).run();
@@ -337,7 +337,7 @@ if (countColabs === 0) {
     db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_3', responsavel = 'Carla Souza' WHERE departamento = 'PESSOAL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
     db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_4', responsavel = 'Roberto Alves' WHERE departamento = 'CONTABIL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
     db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_1', responsavel = 'Mariana Silva' WHERE departamento = 'IMPLANTACAO' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
-    db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_0', responsavel = 'Eduardo Rocha' WHERE departamento = 'COMERCIAL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
+    db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_0', responsavel = 'Raphael José' WHERE departamento = 'COMERCIAL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
   } catch (e) {}
 }
 

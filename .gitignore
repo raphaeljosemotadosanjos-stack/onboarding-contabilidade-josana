@@ -11,5 +11,7 @@ test_literal.txt
 
 # Backups e temporários
 database.sqlite.backup
+*.sqlite-shm
+*.sqlite-wal
 .DS_Store
 Thumbs.db
