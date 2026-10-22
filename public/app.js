@@ -667,30 +667,63 @@ function obterAvatarColaboradorHtml(c, tamanho = 'w-8 h-8', extraClasses = '') {
 
 function atualizarDisplayUsuarioLogado() {
   if (!estado.usuarioLogado) return;
-  const { nome, departamento, cor_avatar, perfil, foto_url } = estado.usuarioLogado;
+  const { nome, departamento, cor_avatar, perfil, foto_url, email } = estado.usuarioLogado;
 
   const topNome = document.getElementById('topbar-usuario-nome');
   if (topNome) topNome.textContent = nome;
 
+  const topDep = document.getElementById('topbar-usuario-dep');
+  if (topDep) topDep.textContent = departamento || '';
+
   const topAvatarSlot = document.getElementById('topbar-user-avatar-slot');
   if (topAvatarSlot) {
-    topAvatarSlot.innerHTML = obterAvatarColaboradorHtml(estado.usuarioLogado, 'w-6 h-6');
+    topAvatarSlot.innerHTML = obterAvatarColaboradorHtml(estado.usuarioLogado, 'w-7 h-7');
   }
 
   const topBadge = document.getElementById('topbar-user-badge');
   if (topBadge) {
     if (perfil === 'GESTOR') {
-      topBadge.className = 'text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#FAF6EE] text-[#9A7736] border border-[#E8D7B5]';
+      topBadge.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#FAF6EE] text-[#9A7736] border border-[#E8D7B5]';
       topBadge.textContent = '👑 Gestor';
     } else if (perfil === 'ONBOARDING') {
-      topBadge.className = 'text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#0A213D]/10 text-[#0A213D] border border-[#0A213D]/20';
+      topBadge.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#0A213D]/10 text-[#0A213D] border border-[#0A213D]/20';
       topBadge.textContent = '🚀 Onboarding';
     } else {
-      topBadge.className = 'text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#F7F7F5] text-[#2F3437] border border-[#EDEDEB]';
+      topBadge.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#F7F7F5] text-[#2F3437] border border-[#EDEDEB]';
       topBadge.textContent = `💼 ${departamento}`;
     }
   }
 
+  // Elementos do Dropdown de Perfil no Topo Direito
+  const dropAvatarSlot = document.getElementById('dropdown-user-avatar-slot');
+  if (dropAvatarSlot) {
+    dropAvatarSlot.innerHTML = obterAvatarColaboradorHtml(estado.usuarioLogado, 'w-10 h-10', 'text-sm font-extrabold');
+  }
+
+  const dropNome = document.getElementById('dropdown-user-nome');
+  if (dropNome) dropNome.textContent = nome;
+
+  const dropEmail = document.getElementById('dropdown-user-email');
+  if (dropEmail) dropEmail.textContent = email || 'colaborador@josanamota.com.br';
+
+  const dropDep = document.getElementById('dropdown-user-dep');
+  if (dropDep) dropDep.textContent = departamento || 'GERAL';
+
+  const dropBadge = document.getElementById('dropdown-user-badge');
+  if (dropBadge) {
+    if (perfil === 'GESTOR') {
+      dropBadge.className = 'text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#FAF6EE] text-[#9A7736] border border-[#E8D7B5]';
+      dropBadge.textContent = '👑 GESTOR GERAL';
+    } else if (perfil === 'ONBOARDING') {
+      dropBadge.className = 'text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#0A213D]/10 text-[#0A213D] border border-[#0A213D]/20';
+      dropBadge.textContent = '🚀 ONBOARDING';
+    } else {
+      dropBadge.className = 'text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200';
+      dropBadge.textContent = `🔒 ${departamento}`;
+    }
+  }
+
+  // Compatibilidade legada para referências do sidebar se existirem
   const sideNome = document.getElementById('sidebar-user-nome');
   if (sideNome) sideNome.textContent = nome;
 
@@ -716,6 +749,51 @@ function atualizarDisplayUsuarioLogado() {
     sideAvatarSlot.innerHTML = obterAvatarColaboradorHtml(estado.usuarioLogado, 'w-8 h-8');
   }
 }
+
+// =========================================================================
+// CONTROLE DO MENU DROPDOWN DE PERFIL (TOPO DIREITO)
+// =========================================================================
+function alternarMenuPerfilTopbar(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+  const menu = document.getElementById('dropdown-menu-perfil');
+  const chevron = document.getElementById('icon-chevron-perfil');
+  if (!menu) return;
+
+  const estaFechado = menu.classList.contains('hidden');
+  if (estaFechado) {
+    menu.classList.remove('hidden');
+    if (chevron) chevron.classList.add('rotate-180');
+    lucide.createIcons();
+  } else {
+    menu.classList.add('hidden');
+    if (chevron) chevron.classList.remove('rotate-180');
+  }
+}
+
+function fecharMenuPerfilTopbar() {
+  const menu = document.getElementById('dropdown-menu-perfil');
+  const chevron = document.getElementById('icon-chevron-perfil');
+  if (menu && !menu.classList.contains('hidden')) {
+    menu.classList.add('hidden');
+    if (chevron) chevron.classList.remove('rotate-180');
+  }
+}
+
+// Fechar menu dropdown ao clicar fora ou pressionar ESC
+document.addEventListener('click', (e) => {
+  const container = document.getElementById('dropdown-perfil-container');
+  if (container && !container.contains(e.target)) {
+    fecharMenuPerfilTopbar();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    fecharMenuPerfilTopbar();
+  }
+});
 
 function aplicarPermissoesInterface() {
   const perfil = estado.usuarioLogado?.perfil || 'TECNICO';
