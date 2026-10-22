@@ -57,20 +57,35 @@ function getColaboradorAutenticado(req) {
 
 app.post('/api/login', (req, res) => {
   try {
-    const { colaborador_id, pin } = req.body;
-    if (!colaborador_id) {
-      return res.status(400).json({ error: 'Selecione o colaborador para efetuar o login.' });
+    const { email, senha, colaborador_id, pin } = req.body;
+    const credencialPin = (senha !== undefined && senha !== null && String(senha).trim() !== '') ? String(senha).trim() : (pin ? String(pin).trim() : '');
+
+    let colab = null;
+
+    if (email && String(email).trim()) {
+      const emailLimpo = String(email).trim().toLowerCase();
+      // Busca exata ou por prefixo (ex: 'eduardo' ou 'eduardo@josanamota.com.br')
+      colab = db.prepare(`
+        SELECT id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil 
+        FROM colaboradores 
+        WHERE ativo = 1 AND (
+          LOWER(TRIM(email)) = ? 
+          OR LOWER(TRIM(email)) = ? 
+          OR LOWER(TRIM(email)) LIKE ?
+        )
+      `).get(emailLimpo, `${emailLimpo}@josanamota.com.br`, `${emailLimpo}@%`);
+    } else if (colaborador_id) {
+      colab = db.prepare('SELECT id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil FROM colaboradores WHERE id = ? AND ativo = 1').get(colaborador_id);
     }
 
-    const colab = db.prepare('SELECT id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil FROM colaboradores WHERE id = ? AND ativo = 1').get(colaborador_id);
     if (!colab) {
-      return res.status(404).json({ error: 'Colaborador não encontrado ou inativo.' });
+      return res.status(401).json({ error: 'E-mail ou senha incorretos. Apenas colaboradores autorizados têm acesso.' });
     }
 
-    // Validação obrigatória de PIN
+    // Validação de Senha / PIN
     const pinEsperado = colab.pin || '1234';
-    if (!pin || String(pin).trim() !== String(pinEsperado).trim()) {
-      return res.status(401).json({ error: 'PIN de acesso incorreto. O PIN padrão é 1234.' });
+    if (!credencialPin || credencialPin !== String(pinEsperado).trim()) {
+      return res.status(401).json({ error: 'E-mail ou senha incorretos. Apenas colaboradores autorizados têm acesso.' });
     }
 
     const { pin: _, ...colabSemPin } = colab;

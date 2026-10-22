@@ -305,12 +305,12 @@ if (!configQuery.get('caminho_base_servidor')) {
 const countColabs = db.prepare('SELECT COUNT(*) as count FROM colaboradores').get().count;
 if (countColabs === 0) {
   const insColab = db.prepare('INSERT INTO colaboradores (id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  insColab.run('colab_0', 'Eduardo Rocha', 'DIRETORIA', 'Gestor Geral & Diretor', 'eduardo@escritorio.com.br', '(11) 98888-1000', '1234', '#4f46e5', 'GESTOR');
-  insColab.run('colab_1', 'Mariana Silva', 'IMPLANTACAO', 'Coordenadora de Implantação', 'mariana@escritorio.com.br', '(11) 98888-1001', '1234', '#0284c7', 'ONBOARDING');
-  insColab.run('colab_2', 'Lucas Mendes', 'FISCAL', 'Analista Fiscal Sênior', 'lucas@escritorio.com.br', '(11) 98888-1002', '1234', '#059669', 'TECNICO');
-  insColab.run('colab_3', 'Carla Souza', 'PESSOAL', 'Analista de DP / Folha', 'carla@escritorio.com.br', '(11) 98888-1003', '1234', '#2563eb', 'TECNICO');
-  insColab.run('colab_4', 'Roberto Alves', 'CONTABIL', 'Contador Responsável', 'roberto@escritorio.com.br', '(11) 98888-1004', '1234', '#7c3aed', 'TECNICO');
-  insColab.run('colab_5', 'Beatriz Lima', 'PARALEGAL', 'Especialista Societário', 'beatriz@escritorio.com.br', '(11) 98888-1005', '1234', '#d97706', 'TECNICO');
+  insColab.run('colab_0', 'Eduardo Rocha', 'DIRETORIA', 'Gestor Geral & Diretor', 'eduardo@josanamota.com.br', '(11) 98888-1000', '1234', '#4f46e5', 'GESTOR');
+  insColab.run('colab_1', 'Mariana Silva', 'IMPLANTACAO', 'Coordenadora de Implantação', 'mariana@josanamota.com.br', '(11) 98888-1001', '1234', '#0284c7', 'ONBOARDING');
+  insColab.run('colab_2', 'Lucas Mendes', 'FISCAL', 'Analista Fiscal Sênior', 'lucas@josanamota.com.br', '(11) 98888-1002', '1234', '#059669', 'TECNICO');
+  insColab.run('colab_3', 'Carla Souza', 'PESSOAL', 'Analista de DP / Folha', 'carla@josanamota.com.br', '(11) 98888-1003', '1234', '#2563eb', 'TECNICO');
+  insColab.run('colab_4', 'Roberto Alves', 'CONTABIL', 'Contador Responsável', 'roberto@josanamota.com.br', '(11) 98888-1004', '1234', '#7c3aed', 'TECNICO');
+  insColab.run('colab_5', 'Beatriz Lima', 'PARALEGAL', 'Especialista Societário', 'beatriz@josanamota.com.br', '(11) 98888-1005', '1234', '#d97706', 'TECNICO');
 } else {
   try {
     const gestorExiste = db.prepare('SELECT id FROM colaboradores WHERE id = "colab_0" OR perfil = "GESTOR"').get();

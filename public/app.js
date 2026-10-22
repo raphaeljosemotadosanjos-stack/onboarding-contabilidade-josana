@@ -220,91 +220,62 @@ function mostrarAppSistema() {
   lucide.createIcons();
 }
 
-function popularSelectLandingColaboradores() {
-  const select = document.getElementById('landing-colaborador-select');
-  if (!select) return;
+function mostrarLandingLogin() {
+  const landing = document.getElementById('tela-landing-login');
+  const app = document.getElementById('app-sistema');
+  const floatingChat = document.getElementById('btn-floating-chat-ia');
 
-  const ativos = (estado.colaboradores || []).filter(c => c.ativo !== 0);
-  if (ativos.length === 0) {
-    select.innerHTML = '<option value="">Nenhum colaborador ativo cadastrado</option>';
-    return;
+  if (app) {
+    app.classList.add('hidden');
+    app.classList.remove('flex');
+  }
+  if (landing) {
+    landing.classList.remove('hidden');
+  }
+  if (floatingChat) {
+    floatingChat.classList.add('hidden');
   }
 
-  const perfisLabel = {
-    'GESTOR': 'Diretoria / Gestor',
-    'ONBOARDING': 'Coordenação Onboarding',
-    'TECNICO': 'Especialista Técnico'
-  };
-
-  select.innerHTML = `
-    <option value="">-- Selecione seu Nome / Usuário --</option>
-    ${ativos.map(c => `
-      <option value="${c.id}">${c.nome} • ${c.departamento} (${perfisLabel[c.perfil] || 'Técnico'})</option>
-    `).join('')}
-  `;
-
-  // Limpar preview e erro
-  const preview = document.getElementById('landing-user-preview');
-  if (preview) preview.classList.add('hidden');
-  const erroBox = document.getElementById('landing-login-erro');
-  if (erroBox) erroBox.classList.add('hidden');
-  const pinInput = document.getElementById('landing-pin-input');
-  if (pinInput) pinInput.value = '';
-}
-
-function aoMudarColaboradorLanding() {
-  const select = document.getElementById('landing-colaborador-select');
-  const preview = document.getElementById('landing-user-preview');
-  const avatarEl = document.getElementById('landing-preview-avatar');
-  const nomeEl = document.getElementById('landing-preview-nome');
-  const cargoEl = document.getElementById('landing-preview-cargo');
-  const perfilEl = document.getElementById('landing-preview-perfil');
-  const pinInput = document.getElementById('landing-pin-input');
+  const emailInput = document.getElementById('landing-email-input');
+  const senhaInput = document.getElementById('landing-senha-input');
   const erroBox = document.getElementById('landing-login-erro');
 
   if (erroBox) erroBox.classList.add('hidden');
+  if (senhaInput) senhaInput.value = '';
 
-  const colabId = select?.value;
-  if (!colabId) {
-    if (preview) preview.classList.add('hidden');
-    return;
-  }
-
-  const colab = (estado.colaboradores || []).find(c => c.id === colabId);
-  if (!colab) return;
-
-  if (preview) preview.classList.remove('hidden');
-  if (avatarEl) avatarEl.innerHTML = obterAvatarColaboradorHtml(colab, 'w-7 h-7');
-  if (nomeEl) nomeEl.textContent = colab.nome;
-  if (cargoEl) cargoEl.textContent = `${colab.cargo || 'Especialista'} • ${colab.departamento}`;
-
-  if (perfilEl) {
-    if (colab.perfil === 'GESTOR') {
-      perfilEl.textContent = 'Gestor Geral';
-      perfilEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200';
-    } else if (colab.perfil === 'ONBOARDING') {
-      perfilEl.textContent = 'Onboarding';
-      perfilEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0A213D]/10 text-[#0A213D] border border-[#0A213D]/20';
-    } else {
-      perfilEl.textContent = 'Técnico';
-      perfilEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200';
+  setTimeout(() => {
+    if (emailInput) {
+      if (!emailInput.value) emailInput.focus();
+      else if (senhaInput) senhaInput.focus();
     }
-  }
+  }, 100);
 
-  if (pinInput) {
-    pinInput.focus();
-  }
+  lucide.createIcons();
 }
 
-function alternarVisibilidadePinLanding() {
-  const pinInput = document.getElementById('landing-pin-input');
-  const icon = document.getElementById('icon-landing-pin-eye');
-  if (!pinInput) return;
-  if (pinInput.type === 'password') {
-    pinInput.type = 'text';
+function alternarVisibilidadeSenhaLanding() {
+  const senhaInput = document.getElementById('landing-senha-input');
+  const icon = document.getElementById('icon-landing-senha-eye');
+  if (!senhaInput) return;
+  if (senhaInput.type === 'password') {
+    senhaInput.type = 'text';
     if (icon) icon.setAttribute('data-lucide', 'eye-off');
   } else {
-    pinInput.type = 'password';
+    senhaInput.type = 'password';
+    if (icon) icon.setAttribute('data-lucide', 'eye');
+  }
+  lucide.createIcons();
+}
+
+function alternarVisibilidadeSenhaModal() {
+  const senhaInput = document.getElementById('modal-trocar-senha-input');
+  const icon = document.getElementById('icon-modal-senha-eye');
+  if (!senhaInput) return;
+  if (senhaInput.type === 'password') {
+    senhaInput.type = 'text';
+    if (icon) icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    senhaInput.type = 'password';
     if (icon) icon.setAttribute('data-lucide', 'eye');
   }
   lucide.createIcons();
@@ -312,25 +283,26 @@ function alternarVisibilidadePinLanding() {
 
 async function realizarLoginLanding(e) {
   if (e) e.preventDefault();
-  const select = document.getElementById('landing-colaborador-select');
-  const pinInput = document.getElementById('landing-pin-input');
+  const emailInput = document.getElementById('landing-email-input');
+  const senhaInput = document.getElementById('landing-senha-input');
   const erroBox = document.getElementById('landing-login-erro');
   const erroTxt = document.getElementById('landing-login-erro-texto');
   const btn = document.getElementById('btn-landing-login');
 
-  const colabId = select?.value;
-  const pin = pinInput?.value?.trim();
+  const email = emailInput?.value?.trim();
+  const senha = senhaInput?.value?.trim();
 
-  if (!colabId) {
+  if (!email) {
     if (erroBox) erroBox.classList.remove('hidden');
-    if (erroTxt) erroTxt.textContent = 'Selecione o seu usuário para prosseguir.';
+    if (erroTxt) erroTxt.textContent = 'Informe seu e-mail corporativo para prosseguir.';
+    if (emailInput) emailInput.focus();
     return;
   }
 
-  if (!pin) {
+  if (!senha) {
     if (erroBox) erroBox.classList.remove('hidden');
-    if (erroTxt) erroTxt.textContent = 'Digite o seu PIN de 4 dígitos.';
-    pinInput.focus();
+    if (erroTxt) erroTxt.textContent = 'Digite sua senha ou PIN de acesso.';
+    if (senhaInput) senhaInput.focus();
     return;
   }
 
@@ -341,12 +313,12 @@ async function realizarLoginLanding(e) {
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ colaborador_id: colabId, pin })
+      body: JSON.stringify({ email, senha })
     });
 
     const data = await res.json();
     if (!res.ok || !data.success) {
-      throw new Error(data.error || 'PIN de acesso incorreto.');
+      throw new Error(data.error || 'E-mail ou senha incorretos.');
     }
 
     if (erroBox) erroBox.classList.add('hidden');
@@ -358,9 +330,9 @@ async function realizarLoginLanding(e) {
   } catch (err) {
     if (erroBox) erroBox.classList.remove('hidden');
     if (erroTxt) erroTxt.textContent = err.message;
-    if (pinInput) {
-      pinInput.focus();
-      pinInput.select();
+    if (senhaInput) {
+      senhaInput.focus();
+      senhaInput.select();
     }
   } finally {
     btn.disabled = false;
@@ -512,73 +484,19 @@ function abrirModalTrocarUsuario(obrigatorio = false) {
     else btnFechar.classList.remove('hidden');
   }
 
-  estado.colaboradorSelecionadoLoginId = estado.usuarioLogado?.id || (estado.colaboradores[0]?.id || null);
-
-  renderizarCardsLoginColaboradores();
-
   const erroDiv = document.getElementById('erro-pin-login');
   if (erroDiv) erroDiv.classList.add('hidden');
 
-  const inputPin = document.getElementById('input-pin-login');
-  if (inputPin) {
-    inputPin.value = '';
-    inputPin.onkeyup = (e) => {
-      if (e.key === 'Enter') submeterLoginComPin();
-    };
-  }
+  const emailInput = document.getElementById('modal-trocar-email-input');
+  const senhaInput = document.getElementById('modal-trocar-senha-input');
+  if (emailInput) emailInput.value = estado.usuarioLogado?.email || '';
+  if (senhaInput) senhaInput.value = '';
 
   document.getElementById('modal-trocar-usuario').classList.remove('hidden');
   setTimeout(() => {
-    if (inputPin) inputPin.focus();
+    if (emailInput && !emailInput.value) emailInput.focus();
+    else if (senhaInput) senhaInput.focus();
   }, 100);
-}
-
-function renderizarCardsLoginColaboradores() {
-  const container = document.getElementById('lista-usuarios-login');
-  if (!container) return;
-
-  container.innerHTML = estado.colaboradores.map(c => {
-    const isSelecionado = (estado.colaboradorSelecionadoLoginId === c.id);
-    let badgePerfil = '';
-    if (c.perfil === 'GESTOR') badgePerfil = '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#FAF6EE] text-[#9A7736] border border-[#E8D7B5]">👑 Gestor</span>';
-    else if (c.perfil === 'ONBOARDING') badgePerfil = '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#0A213D]/10 text-[#0A213D] border border-[#0A213D]/20">🚀 Onboarding</span>';
-    else badgePerfil = `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#F7F7F5] text-[#2F3437] border border-[#EDEDEB]">🔒 ${c.departamento}</span>`;
-
-    return `
-      <div onclick="selecionarColaboradorLogin('${c.id}')" class="p-2.5 rounded-xl border cursor-pointer transition flex items-center justify-between ${
-        isSelecionado ? 'bg-[#FAF6EE] border-[#C5A059] shadow-xs ring-2 ring-[#C5A059]/30' : 'bg-white border-[#EDEDEB] hover:border-[#D3D2CE] hover:bg-[#F7F7F5]'
-      }">
-        <div class="flex items-center space-x-2.5 min-w-0">
-          ${obterAvatarColaboradorHtml(c, 'w-9 h-9')}
-          <div class="min-w-0">
-            <h4 class="font-bold text-xs text-[#0A213D] truncate">${c.nome}</h4>
-            <div class="flex items-center space-x-1 mt-0.5">
-              ${badgePerfil}
-            </div>
-          </div>
-        </div>
-        ${isSelecionado ? `<span class="w-4 h-4 rounded-full bg-[#0A213D] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs">✓</span>` : ''}
-      </div>
-    `;
-  }).join('');
-
-  const selColab = estado.colaboradores.find(c => c.id === estado.colaboradorSelecionadoLoginId);
-  const txtNome = document.getElementById('txt-nome-colab-selecionado');
-  if (txtNome && selColab) {
-    txtNome.textContent = selColab.nome;
-  }
-}
-
-function selecionarColaboradorLogin(colabId) {
-  estado.colaboradorSelecionadoLoginId = colabId;
-  renderizarCardsLoginColaboradores();
-  const erroDiv = document.getElementById('erro-pin-login');
-  if (erroDiv) erroDiv.classList.add('hidden');
-  const inputPin = document.getElementById('input-pin-login');
-  if (inputPin) {
-    inputPin.value = '';
-    inputPin.focus();
-  }
 }
 
 function fecharModalTrocarUsuario() {
@@ -589,23 +507,74 @@ function fecharModalTrocarUsuario() {
   document.getElementById('modal-trocar-usuario').classList.add('hidden');
 }
 
-async function submeterLoginComPin() {
-  const colabId = estado.colaboradorSelecionadoLoginId;
-  if (!colabId) {
-    alert('Selecione seu usuário.');
+async function submeterLoginModal(e) {
+  if (e) e.preventDefault();
+  const emailInput = document.getElementById('modal-trocar-email-input');
+  const senhaInput = document.getElementById('modal-trocar-senha-input');
+  const erroDiv = document.getElementById('erro-pin-login');
+  const txtErro = document.getElementById('txt-erro-pin-login');
+  const btn = document.getElementById('btn-modal-login-submit');
+
+  const email = emailInput?.value?.trim();
+  const senha = senhaInput?.value?.trim();
+
+  if (!email || !senha) {
+    if (erroDiv && txtErro) {
+      txtErro.textContent = 'Informe e-mail e senha para prosseguir.';
+      erroDiv.classList.remove('hidden');
+    }
     return;
   }
 
-  const inputPin = document.getElementById('input-pin-login');
-  const pin = inputPin ? inputPin.value.trim() : '';
-
-  const erroDiv = document.getElementById('erro-pin-login');
-  const txtErro = document.getElementById('txt-erro-pin-login');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block"></span> <span>Autenticando...</span>`;
+  }
 
   try {
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'E-mail ou senha incorretos.');
+    }
+
+    if (erroDiv) erroDiv.classList.add('hidden');
+    estado.usuarioLogado = data.colaborador;
+    localStorage.setItem('onboarding_usuario_logado', JSON.stringify(data.colaborador));
+    estado.loginObrigatorio = false;
+
+    fecharModalTrocarUsuario();
+    atualizarDisplayUsuarioLogado();
+    aplicarPermissoesInterface();
+    mostrarToast(`Conectado como ${data.colaborador.nome}!`, 'sucesso');
+
+    if (estado.usuarioLogado.perfil === 'TECNICO') {
+      navegarPara('meu-painel', estado.usuarioLogado.id);
+    } else {
+      navegarPara('dashboard');
+    }
+  } catch (err) {
+    if (erroDiv && txtErro) {
+      txtErro.textContent = err.message;
+      erroDiv.classList.remove('hidden');
+    }
+    if (senhaInput) {
+      senhaInput.focus();
+      senhaInput.select();
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 text-[#C5A059]"></i> <span>Entrar no Sistema</span>`;
+      lucide.createIcons();
+    }
+  }
+}
       body: JSON.stringify({ colaborador_id: colabId, pin })
     });
 
