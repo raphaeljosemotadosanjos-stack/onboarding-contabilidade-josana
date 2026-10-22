@@ -740,10 +740,19 @@ app.get('/api/dashboard/geral', (req, res) => {
       const tarefasConcEtapa = tarefasDestaEtapa.filter(t => t.status === 'CONCLUIDO' || t.status === 'CONCLUIDA');
 
       funilEtapas.push({
+        numero: e,
         etapa_numero: e,
+        titulo: nomesEtapas[e],
         nome: nomesEtapas[e],
+        totalEmpresas: empresasNaEtapa.length,
         total_empresas: empresasNaEtapa.length,
-        empresas: empresasNaEtapa.map(c => ({ id: c.id, razao_social: c.razao_social, tipo_empresa: c.tipo_empresa, regime_tributario: c.regime_tributario })),
+        empresas: empresasNaEtapa.map(c => ({
+          id: c.id,
+          razao_social: c.razao_social,
+          codigo_dominio: c.codigo_dominio || '',
+          tipo_empresa: c.tipo_empresa,
+          regime_tributario: c.regime_tributario
+        })),
         total_tarefas: tarefasDestaEtapa.length,
         tarefas_concluidas: tarefasConcEtapa.length,
         pct_conclusao: tarefasDestaEtapa.length > 0 ? Math.round((tarefasConcEtapa.length / tarefasDestaEtapa.length) * 100) : 0
@@ -758,14 +767,18 @@ app.get('/api/dashboard/geral', (req, res) => {
       const pendDep = tarefasDep.filter(t => t.status !== 'CONCLUIDO' && t.status !== 'CONCLUIDA' && t.status !== 'NAO_APLICAVEL');
       const atrasadasDep = pendDep.filter(t => t.prazo_data && t.prazo_data < hoje);
       const pendenciasDep = pendenciasAbertas.filter(p => p.departamento_origem === dep);
+      const statusDep = atrasadasDep.length > 0 ? 'CRITICO' : pendDep.length > 5 ? 'ATENCAO' : 'NORMAL';
 
       return {
         departamento: dep,
+        total: tarefasDep.length,
         total_tarefas: tarefasDep.length,
         concluidas: concDep.length,
         pendentes: pendDep.length,
         atrasadas: atrasadasDep.length,
+        progresso_pct: tarefasDep.length > 0 ? Math.round((concDep.length / tarefasDep.length) * 100) : 0,
         pct: tarefasDep.length > 0 ? Math.round((concDep.length / tarefasDep.length) * 100) : 0,
+        status: statusDep,
         pendencias_abertas: pendenciasDep.length
       };
     });
@@ -908,7 +921,7 @@ app.get('/api/dashboard/colaborador/:id', (req, res) => {
     const d180 = new Date(agora - 180 * 24 * 60 * 60 * 1000).toISOString();
 
     // Tarefas do colaborador
-    const tarefas = db.prepare(`
+    let tarefas = db.prepare(`
       SELECT t.*, c.razao_social as cliente_nome, c.tipo_empresa, c.regime_tributario, c.etapa_atual as cliente_etapa
       FROM tarefas_checklist t
       JOIN clientes c ON c.id = t.cliente_id
@@ -916,6 +929,18 @@ app.get('/api/dashboard/colaborador/:id', (req, res) => {
          OR (t.departamento = ? AND t.responsavel_colaborador_id IS NULL)
       ORDER BY t.etapa_numero ASC, t.ordem ASC
     `).all(id, colaborador.departamento);
+
+    const isLideranca = (colaborador.perfil === 'GESTOR' || colaborador.perfil === 'ONBOARDING');
+    let modoSupervisao = false;
+    if (isLideranca && tarefas.length === 0) {
+      modoSupervisao = true;
+      tarefas = db.prepare(`
+        SELECT t.*, c.razao_social as cliente_nome, c.tipo_empresa, c.regime_tributario, c.etapa_atual as cliente_etapa
+        FROM tarefas_checklist t
+        JOIN clientes c ON c.id = t.cliente_id
+        ORDER BY t.etapa_numero ASC, t.ordem ASC
+      `).all();
+    }
 
     const concluidasTodas = tarefas.filter(t => t.status === 'CONCLUIDO' || t.status === 'CONCLUIDA');
     const pendentesTodas = tarefas.filter(t => t.status !== 'CONCLUIDO' && t.status !== 'CONCLUIDA' && t.status !== 'NAO_APLICAVEL');
@@ -1023,13 +1048,30 @@ app.get('/api/dashboard/colaborador/:id', (req, res) => {
     filaProximosDias.sort((a, b) => (a.prazo_data || '').localeCompare(b.prazo_data || ''));
 
     // Empresas atribuídas
-    const clientesAtribuidos = db.prepare(`
-      SELECT DISTINCT c.id, c.razao_social, c.tipo_empresa, c.regime_tributario, c.etapa_atual, c.status_geral
-      FROM clientes c
-      WHERE c.resp_paralegal_id = ? OR c.resp_fiscal_id = ? OR c.resp_pessoal_id = ? OR c.resp_contabil_id = ?
-         OR EXISTS (SELECT 1 FROM tarefas_checklist t WHERE t.cliente_id = c.id AND t.responsavel_colaborador_id = ?)
-      ORDER BY c.etapa_atual ASC
-    `).all(id, id, id, id, id);
+    let clientesAtribuidos = [];
+    if (isLideranca) {
+      clientesAtribuidos = db.prepare(`
+        SELECT DISTINCT c.id, c.razao_social, c.tipo_empresa, c.regime_tributario, c.etapa_atual, c.status_geral
+        FROM clientes c
+        WHERE c.status_geral != 'CONCLUIDO'
+        ORDER BY c.etapa_atual ASC
+      `).all();
+      if (clientesAtribuidos.length === 0) {
+        clientesAtribuidos = db.prepare(`
+          SELECT DISTINCT c.id, c.razao_social, c.tipo_empresa, c.regime_tributario, c.etapa_atual, c.status_geral
+          FROM clientes c
+          ORDER BY c.id DESC LIMIT 12
+        `).all();
+      }
+    } else {
+      clientesAtribuidos = db.prepare(`
+        SELECT DISTINCT c.id, c.razao_social, c.tipo_empresa, c.regime_tributario, c.etapa_atual, c.status_geral
+        FROM clientes c
+        WHERE c.resp_paralegal_id = ? OR c.resp_fiscal_id = ? OR c.resp_pessoal_id = ? OR c.resp_contabil_id = ?
+           OR EXISTS (SELECT 1 FROM tarefas_checklist t WHERE t.cliente_id = c.id AND t.responsavel_colaborador_id = ?)
+        ORDER BY c.etapa_atual ASC
+      `).all(id, id, id, id, id);
+    }
 
     // Última análise de IA
     const ultimaAnaliseIA = db.prepare(`
@@ -1040,6 +1082,7 @@ app.get('/api/dashboard/colaborador/:id', (req, res) => {
 
     res.json({
       colaborador,
+      modo_supervisao: modoSupervisao,
       periodo_ativo: periodo,
       label_periodo: labelPeriodo,
       metricas_periodo: {
@@ -1095,12 +1138,20 @@ app.post('/api/dashboard/colaborador/:id/analise-ia', async (req, res) => {
     if (!colaborador) return res.status(404).json({ error: 'Colaborador não encontrado.' });
 
     // Buscar métricas reais
-    const tarefas = db.prepare(`
+    let tarefas = db.prepare(`
       SELECT t.*, c.razao_social as cliente_nome
       FROM tarefas_checklist t
       JOIN clientes c ON c.id = t.cliente_id
       WHERE t.responsavel_colaborador_id = ? OR (t.departamento = ? AND t.responsavel_colaborador_id IS NULL)
     `).all(id, colaborador.departamento);
+
+    if ((colaborador.perfil === 'GESTOR' || colaborador.perfil === 'ONBOARDING') && tarefas.length === 0) {
+      tarefas = db.prepare(`
+        SELECT t.*, c.razao_social as cliente_nome
+        FROM tarefas_checklist t
+        JOIN clientes c ON c.id = t.cliente_id
+      `).all();
+    }
 
     const hoje = new Date().toISOString().split('T')[0];
     const concluidas = tarefas.filter(t => t.status === 'CONCLUIDO' || t.status === 'CONCLUIDA');
@@ -1132,7 +1183,12 @@ app.post('/api/dashboard/colaborador/:id/analise-ia', async (req, res) => {
     const horaEmissao = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     let dicasSetor = "";
-    if (colaborador.departamento === 'FISCAL') {
+    if (colaborador.perfil === 'GESTOR' || colaborador.departamento === 'DIRETORIA') {
+      dicasSetor = `
+- **Supervisão dos Gargalos Departamentais:** Monitore no Dashboard Geral os setores com maior volume de pendências e redistribua tarefas em atraso.
+- **Auditoria de Conformidade e Aceites:** Realize a conferência das 4 homologações (Paralegal, Fiscal, DP e Contábil) antes da entrega formal da empresa ao cliente.
+- **NPS e Satisfação no Onboarding:** Acompanhe os prazos do primeiro fechamento de competência para garantir uma experiência de excelência na transição contábil.`;
+    } else if (colaborador.departamento === 'FISCAL') {
       dicasSetor = `
 - **Validação Antecipada de Regime:** Ao assumir a empresa, confirme de imediato se há atividades mistas (comércio + serviços) para antecipar a configuração de notas fiscais conjugadas.
 - **Parametrização do Sistema Domínio:** Verifique se as alíquotas do Simples Nacional ou Fator R foram previamente calculadas antes da primeira apuração fiscal.
