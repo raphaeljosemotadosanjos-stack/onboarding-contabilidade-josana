@@ -81,24 +81,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Inicialização do tema (Modo Noturno / Claro)
   inicializarModoNoturno();
 
-  // 1. Se for link de coleta externa (#coleta=TOKEN ou ?coleta=TOKEN), entra direto no formulário público
+  // 1. Se for link de coleta externa (#coleta=TOKEN ou ?coleta=TOKEN), entra direto no formulário público do cliente
   const tokenColeta = extrairTokenColeta();
   if (tokenColeta) {
     iniciarVisualizacaoColetaExterna(tokenColeta);
     return;
   }
 
-  // 2. Se for acesso ao sistema interno, autentica o colaborador
+  // 2. Se for acesso ao sistema corporativo, carrega configurações e colaboradores
   await carregarConfiguracoes();
   await carregarColaboradores();
   inicializarUsuarioLogado();
-  await atualizarContadoresSidebar();
-
-  if (estado.usuarioLogado?.perfil === 'TECNICO') {
-    navegarPara('meu-painel', estado.usuarioLogado.id);
-  } else {
-    navegarPara('dashboard');
-  }
 });
 
 // Suporte a troca dinâmica de hash na barra de endereços
@@ -157,19 +150,232 @@ function inicializarUsuarioLogado() {
   if (salvo) {
     try {
       const parsed = JSON.parse(salvo);
-      const colabExistente = estado.colaboradores.find(c => c.id === parsed.id);
+      const colabExistente = (estado.colaboradores || []).find(c => c.id === parsed.id && c.ativo !== 0);
       if (colabExistente) {
         estado.usuarioLogado = colabExistente;
+      } else {
+        localStorage.removeItem('onboarding_usuario_logado');
+        estado.usuarioLogado = null;
       }
-    } catch (e) {}
+    } catch (e) {
+      estado.usuarioLogado = null;
+    }
   }
 
-  if (!estado.usuarioLogado) {
-    abrirModalTrocarUsuario(true);
+  if (estado.usuarioLogado) {
+    mostrarAppSistema();
   } else {
-    atualizarDisplayUsuarioLogado();
-    aplicarPermissoesInterface();
+    mostrarLandingLogin();
   }
+}
+
+// =========================================================================
+// CONTROLE DE TELAS: LANDING PAGE VS SISTEMA INTERNO
+// =========================================================================
+function mostrarLandingLogin() {
+  const landing = document.getElementById('tela-landing-login');
+  const app = document.getElementById('app-sistema');
+  const floatingChat = document.getElementById('btn-floating-chat-ia');
+
+  if (app) {
+    app.classList.add('hidden');
+    app.classList.remove('flex');
+  }
+  if (landing) {
+    landing.classList.remove('hidden');
+  }
+  if (floatingChat) {
+    floatingChat.classList.add('hidden');
+  }
+
+  popularSelectLandingColaboradores();
+  lucide.createIcons();
+}
+
+function mostrarAppSistema() {
+  const landing = document.getElementById('tela-landing-login');
+  const app = document.getElementById('app-sistema');
+  const floatingChat = document.getElementById('btn-floating-chat-ia');
+
+  if (landing) {
+    landing.classList.add('hidden');
+  }
+  if (app) {
+    app.classList.remove('hidden');
+    app.classList.add('flex');
+  }
+  if (floatingChat) {
+    floatingChat.classList.remove('hidden');
+  }
+
+  atualizarDisplayUsuarioLogado();
+  aplicarPermissoesInterface();
+  atualizarContadoresSidebar();
+
+  if (estado.usuarioLogado?.perfil === 'TECNICO') {
+    navegarPara('meu-painel', estado.usuarioLogado.id);
+  } else {
+    navegarPara('dashboard');
+  }
+  lucide.createIcons();
+}
+
+function popularSelectLandingColaboradores() {
+  const select = document.getElementById('landing-colaborador-select');
+  if (!select) return;
+
+  const ativos = (estado.colaboradores || []).filter(c => c.ativo !== 0);
+  if (ativos.length === 0) {
+    select.innerHTML = '<option value="">Nenhum colaborador ativo cadastrado</option>';
+    return;
+  }
+
+  const perfisLabel = {
+    'GESTOR': 'Diretoria / Gestor',
+    'ONBOARDING': 'Coordenação Onboarding',
+    'TECNICO': 'Especialista Técnico'
+  };
+
+  select.innerHTML = `
+    <option value="">-- Selecione seu Nome / Usuário --</option>
+    ${ativos.map(c => `
+      <option value="${c.id}">${c.nome} • ${c.departamento} (${perfisLabel[c.perfil] || 'Técnico'})</option>
+    `).join('')}
+  `;
+
+  // Limpar preview e erro
+  const preview = document.getElementById('landing-user-preview');
+  if (preview) preview.classList.add('hidden');
+  const erroBox = document.getElementById('landing-login-erro');
+  if (erroBox) erroBox.classList.add('hidden');
+  const pinInput = document.getElementById('landing-pin-input');
+  if (pinInput) pinInput.value = '';
+}
+
+function aoMudarColaboradorLanding() {
+  const select = document.getElementById('landing-colaborador-select');
+  const preview = document.getElementById('landing-user-preview');
+  const avatarEl = document.getElementById('landing-preview-avatar');
+  const nomeEl = document.getElementById('landing-preview-nome');
+  const cargoEl = document.getElementById('landing-preview-cargo');
+  const perfilEl = document.getElementById('landing-preview-perfil');
+  const pinInput = document.getElementById('landing-pin-input');
+  const erroBox = document.getElementById('landing-login-erro');
+
+  if (erroBox) erroBox.classList.add('hidden');
+
+  const colabId = select?.value;
+  if (!colabId) {
+    if (preview) preview.classList.add('hidden');
+    return;
+  }
+
+  const colab = (estado.colaboradores || []).find(c => c.id === colabId);
+  if (!colab) return;
+
+  if (preview) preview.classList.remove('hidden');
+  if (avatarEl) avatarEl.innerHTML = obterAvatarColaboradorHtml(colab, 'w-7 h-7');
+  if (nomeEl) nomeEl.textContent = colab.nome;
+  if (cargoEl) cargoEl.textContent = `${colab.cargo || 'Especialista'} • ${colab.departamento}`;
+
+  if (perfilEl) {
+    if (colab.perfil === 'GESTOR') {
+      perfilEl.textContent = 'Gestor Geral';
+      perfilEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200';
+    } else if (colab.perfil === 'ONBOARDING') {
+      perfilEl.textContent = 'Onboarding';
+      perfilEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0A213D]/10 text-[#0A213D] border border-[#0A213D]/20';
+    } else {
+      perfilEl.textContent = 'Técnico';
+      perfilEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200';
+    }
+  }
+
+  if (pinInput) {
+    pinInput.focus();
+  }
+}
+
+function alternarVisibilidadePinLanding() {
+  const pinInput = document.getElementById('landing-pin-input');
+  const icon = document.getElementById('icon-landing-pin-eye');
+  if (!pinInput) return;
+  if (pinInput.type === 'password') {
+    pinInput.type = 'text';
+    if (icon) icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    pinInput.type = 'password';
+    if (icon) icon.setAttribute('data-lucide', 'eye');
+  }
+  lucide.createIcons();
+}
+
+async function realizarLoginLanding(e) {
+  if (e) e.preventDefault();
+  const select = document.getElementById('landing-colaborador-select');
+  const pinInput = document.getElementById('landing-pin-input');
+  const erroBox = document.getElementById('landing-login-erro');
+  const erroTxt = document.getElementById('landing-login-erro-texto');
+  const btn = document.getElementById('btn-landing-login');
+
+  const colabId = select?.value;
+  const pin = pinInput?.value?.trim();
+
+  if (!colabId) {
+    if (erroBox) erroBox.classList.remove('hidden');
+    if (erroTxt) erroTxt.textContent = 'Selecione o seu usuário para prosseguir.';
+    return;
+  }
+
+  if (!pin) {
+    if (erroBox) erroBox.classList.remove('hidden');
+    if (erroTxt) erroTxt.textContent = 'Digite o seu PIN de 4 dígitos.';
+    pinInput.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block"></span> <span>Autenticando...</span>`;
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ colaborador_id: colabId, pin })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'PIN de acesso incorreto.');
+    }
+
+    if (erroBox) erroBox.classList.add('hidden');
+    estado.usuarioLogado = data.colaborador;
+    localStorage.setItem('onboarding_usuario_logado', JSON.stringify(data.colaborador));
+
+    mostrarAppSistema();
+    mostrarToast(`Bem-vindo(a), ${data.colaborador.nome}!`, 'sucesso');
+  } catch (err) {
+    if (erroBox) erroBox.classList.remove('hidden');
+    if (erroTxt) erroTxt.textContent = err.message;
+    if (pinInput) {
+      pinInput.focus();
+      pinInput.select();
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<span>Entrar no Sistema</span> <i data-lucide="arrow-right" class="w-4 h-4 text-[#C5A059]"></i>`;
+    lucide.createIcons();
+  }
+}
+
+function efetuarLogout() {
+  if (!confirm('Deseja realmente sair da sua conta?')) return;
+  localStorage.removeItem('onboarding_usuario_logado');
+  estado.usuarioLogado = null;
+
+  mostrarLandingLogin();
+  mostrarToast('Você saiu do sistema.', 'info');
 }
 
 // Helper Universal de Foto/Avatar do Colaborador
@@ -4410,12 +4616,12 @@ async function iniciarVisualizacaoColetaExterna(token) {
     <div class="min-h-screen bg-slate-100 text-slate-800 flex flex-col justify-between font-sans">
       <header class="bg-white border-b border-slate-200 py-4 px-6 flex items-center justify-between shadow-2xs sticky top-0 z-20">
         <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center text-white font-bold shadow-md shadow-sky-600/30">
-            <i data-lucide="building" class="w-5 h-5"></i>
+          <div class="w-10 h-10 rounded-xl bg-white border border-[#EDEDEB] p-1 flex items-center justify-center shadow-2xs">
+            <img src="/logo-monograma.png" alt="JM" class="max-h-full max-w-full object-contain">
           </div>
           <div>
-            <h1 class="font-extrabold text-slate-900 text-base" id="coleta-header-escritorio">Escritório de Contabilidade</h1>
-            <p class="text-xs text-sky-700 font-semibold">Processo de Abertura & Constituição Empresarial</p>
+            <h1 class="font-extrabold text-[#0A213D] text-sm uppercase tracking-wider leading-tight" id="coleta-header-escritorio">Josana Mota Contabilidade</h1>
+            <p class="text-[11px] text-[#C5A059] font-bold">Processo de Abertura & Constituição Empresarial</p>
           </div>
         </div>
         <span class="text-xs px-3 py-1 bg-sky-50 text-sky-800 rounded-full font-bold border border-sky-200">Protocolo: ${token}</span>

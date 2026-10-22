@@ -57,7 +57,141 @@
 </head>
 <body class="bg-[#FAFAF9] text-[#2F3437] antialiased min-h-screen flex flex-col font-sans transition-colors duration-200">
 
-  <div class="flex flex-1 min-h-screen overflow-hidden">
+  <!-- ======================================================== -->
+  <!-- 1. LANDING PAGE & PORTAL DE LOGIN JOSANA MOTA CONTABILIDADE -->
+  <!-- ======================================================== -->
+  <div id="tela-landing-login" class="min-h-screen flex flex-col justify-between bg-[#FAFAF9] dark:bg-[#191919] text-[#2F3437] dark:text-[#E6E6E5] transition-colors duration-200 relative overflow-x-hidden">
+    
+    <!-- TOP BAR DISCRETA DA LANDING PAGE -->
+    <header class="w-full max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 flex items-center justify-center p-1 rounded-xl bg-white dark:bg-[#202020] border border-[#EDEDEB] dark:border-[#333330] shadow-2xs">
+          <img src="/logo-monograma.png" alt="JM Josana Mota" class="max-h-full max-w-full object-contain">
+        </div>
+        <div>
+          <h1 class="font-extrabold text-xs uppercase tracking-wider text-[#0A213D] dark:text-[#DFC48B] leading-tight">Josana Mota</h1>
+          <p class="text-[8px] uppercase tracking-[0.25em] font-bold text-[#C5A059]">Contabilidade</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button onclick="alternarModoNoturno()" class="p-2 rounded-xl border border-[#EDEDEB] dark:border-[#333330] hover:bg-white dark:hover:bg-[#252525] text-[#787774] dark:text-[#9B9A97] hover:text-[#0A213D] transition shadow-2xs flex items-center justify-center" title="Alternar Modo Noturno">
+          <i data-lucide="moon" class="w-4 h-4 text-[#C5A059]"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- CORPO CENTRAL: APRESENTAÇÃO INSTITUCIONAL + CARD DE LOGIN -->
+    <main class="flex-1 flex items-center justify-center px-4 py-8">
+      <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+        
+        <!-- COLUNA ESQUERDA: APRESENTAÇÃO INSTITUCIONAL NOTION -->
+        <div class="md:col-span-6 space-y-4 text-center md:text-left">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#FAF6EE] dark:bg-[#0A213D]/40 text-[#0A213D] dark:text-[#DFC48B] border border-[#E8D7B5] dark:border-[#C5A059]/30 text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-[#C5A059] animate-pulse"></span>
+            <span>Sistema Interno de Onboarding</span>
+          </div>
+
+          <h2 class="text-3xl md:text-4xl font-extrabold text-[#0A213D] dark:text-white tracking-tight leading-tight">
+            Gestão societária e implantação com excelência.
+          </h2>
+
+          <p class="text-sm text-[#787774] dark:text-[#9B9A97] leading-relaxed">
+            Central de controle operacional da <strong>Josana Mota Contabilidade</strong>. Esteira das 7 etapas, ficha de 67 perguntas societárias e cockpits de produtividade com inteligência artificial.
+          </p>
+
+          <!-- AVISO ELEGANTE PARA CLIENTES DO WHATSAPP -->
+          <div class="p-4 rounded-2xl bg-white dark:bg-[#202020] border border-[#EDEDEB] dark:border-[#333330] shadow-2xs text-left space-y-2 mt-6">
+            <div class="flex items-center space-x-2 text-[#0A213D] dark:text-[#DFC48B]">
+              <i data-lucide="message-circle" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
+              <strong class="text-xs font-bold">Você é cliente em abertura de empresa?</strong>
+            </div>
+            <p class="text-[12px] text-[#787774] dark:text-[#9B9A97] leading-relaxed">
+              Você não precisa de login para enviar documentos. Para preencher a ficha de abertura ou anexar seus comprovantes, clique diretamente no <strong>link exclusivo enviado para o seu WhatsApp</strong> pela nossa equipe.
+            </p>
+          </div>
+        </div>
+
+        <!-- COLUNA DIREITA: CARD DE LOGIN DA EQUIPE -->
+        <div class="md:col-span-6">
+          <div class="bg-white dark:bg-[#202020] rounded-3xl p-7 border border-[#EDEDEB] dark:border-[#333330] shadow-xl space-y-5 relative">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2 text-xs font-bold text-[#C5A059] uppercase tracking-wider">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span>Acesso Restrito à Equipe</span>
+              </div>
+              <h3 class="text-xl font-bold text-[#0A213D] dark:text-white">Entrar no Sistema</h3>
+              <p class="text-xs text-[#787774] dark:text-[#9B9A97]">Apenas colaboradores cadastrados pela Diretoria têm acesso autorizado.</p>
+            </div>
+
+            <form onsubmit="realizarLoginLanding(event)" class="space-y-4">
+              <!-- SELECT DE COLABORADOR -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-[#0A213D] dark:text-[#DFC48B]">Selecione seu Usuário:</label>
+                <div class="relative">
+                  <select id="landing-colaborador-select" onchange="aoMudarColaboradorLanding()" class="w-full pl-3 pr-9 py-2.5 bg-[#FAFAF9] dark:bg-[#191919] border border-[#EDEDEB] dark:border-[#333330] rounded-xl text-xs font-medium text-[#2F3437] dark:text-[#E6E6E5] focus:ring-2 focus:ring-[#0A213D] focus:border-transparent outline-none transition appearance-none cursor-pointer">
+                    <option value="">Carregando colaboradores...</option>
+                  </select>
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#787774]">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PREVIEW DO USUÁRIO SELECIONADO (CARGO E PERFIL) -->
+              <div id="landing-user-preview" class="hidden p-3 rounded-xl bg-[#FAF6EE] dark:bg-[#0A213D]/30 border border-[#E8D7B5] dark:border-[#C5A059]/30 flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                  <div id="landing-preview-avatar" class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0"></div>
+                  <div class="min-w-0">
+                    <strong id="landing-preview-nome" class="text-xs text-[#0A213D] dark:text-white block truncate"></strong>
+                    <span id="landing-preview-cargo" class="text-[11px] text-[#787774] dark:text-[#9B9A97] truncate block"></span>
+                  </div>
+                </div>
+                <span id="landing-preview-perfil" class="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"></span>
+              </div>
+
+              <!-- CAMPO DE PIN -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-bold text-[#0A213D] dark:text-[#DFC48B]">PIN de Acesso (4 Dígitos):</label>
+                  <span class="text-[10px] text-[#787774] dark:text-[#9B9A97]">Padrão inicial: 1234</span>
+                </div>
+                <div class="relative">
+                  <input type="password" id="landing-pin-input" maxlength="8" placeholder="••••" class="w-full px-4 py-2.5 bg-[#FAFAF9] dark:bg-[#191919] border border-[#EDEDEB] dark:border-[#333330] rounded-xl text-base tracking-widest text-[#0A213D] dark:text-white font-bold focus:ring-2 focus:ring-[#0A213D] focus:border-transparent outline-none transition text-center" autocomplete="current-password" required>
+                  <button type="button" onclick="alternarVisibilidadePinLanding()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-[#787774] hover:text-[#0A213D] transition">
+                    <i data-lucide="eye" id="icon-landing-pin-eye" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ALERTA DE ERRO -->
+              <div id="landing-login-erro" class="hidden p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-400 flex items-center space-x-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-red-600"></i>
+                <span id="landing-login-erro-texto">PIN incorreto.</span>
+              </div>
+
+              <!-- BOTÃO DE ENTRAR -->
+              <button type="submit" id="btn-landing-login" class="w-full py-3 bg-[#0A213D] hover:bg-[#153358] text-white rounded-xl text-xs font-bold tracking-wide uppercase shadow-md shadow-[#0A213D]/20 transition active:scale-98 flex items-center justify-center space-x-2 cursor-pointer">
+                <span>Entrar no Sistema</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-[#C5A059]"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- RODAPÉ DA LANDING PAGE -->
+    <footer class="w-full max-w-6xl mx-auto px-6 py-5 border-t border-[#EDEDEB] dark:border-[#333330] text-center text-[11px] text-[#787774] dark:text-[#9B9A97]">
+      Josana Mota Contabilidade • Sistema Interno de Onboarding e Gestão Societária • Conexão Criptografada
+    </footer>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 2. SISTEMA INTERNO DE GESTÃO (EXIBIDO APÓS LOGIN) -->
+  <!-- ======================================================== -->
+  <div id="app-sistema" class="hidden flex flex-1 min-h-screen overflow-hidden">
 
     <!-- SIDEBAR ESTILO NOTION -->
     <aside class="w-64 bg-[#F7F7F5] text-[#2F3437] flex flex-col flex-shrink-0 border-r border-[#EDEDEB] no-print">
@@ -176,8 +310,11 @@
             <button onclick="abrirModalAlterarPin()" class="text-[10px] text-[#787774] hover:text-[#0A213D] px-2 py-0.5 bg-[#F7F7F5] hover:bg-[#EFEFED] border border-[#EDEDEB] rounded transition" title="Alterar meu PIN de acesso">
               PIN
             </button>
-            <button onclick="abrirModalTrocarUsuario()" class="text-[10px] text-[#787774] hover:text-[#0A213D] px-2 py-0.5 bg-[#F7F7F5] hover:bg-[#EFEFED] border border-[#EDEDEB] rounded transition" title="Trocar de Colaborador ou Sair">
+            <button onclick="abrirModalTrocarUsuario()" class="text-[10px] text-[#787774] hover:text-[#0A213D] px-2 py-0.5 bg-[#F7F7F5] hover:bg-[#EFEFED] border border-[#EDEDEB] rounded transition" title="Trocar de Colaborador">
               Trocar
+            </button>
+            <button onclick="efetuarLogout()" class="text-[10px] text-red-600 hover:text-red-700 px-2 py-0.5 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition font-bold" title="Sair do Sistema (Logout)">
+              Sair
             </button>
           </div>
         </div>
@@ -217,6 +354,11 @@
           <button id="btn-topbar-novo-onboarding" onclick="abrirModalNovoCliente()" class="inline-flex items-center space-x-1.5 bg-[#0A213D] hover:bg-[#153358] text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition active:scale-95">
             <i data-lucide="plus" class="w-4 h-4 text-[#C5A059]"></i>
             <span>Novo Onboarding</span>
+          </button>
+
+          <!-- BOTÃO SAIR (LOGOUT) -->
+          <button onclick="efetuarLogout()" class="p-2 rounded-lg border border-[#EDEDEB] hover:bg-red-50 text-[#787774] hover:text-red-600 transition shadow-2xs flex items-center justify-center cursor-pointer" title="Sair da Conta (Logout)">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
           </button>
         </div>
       </header>
@@ -276,10 +418,13 @@
           </button>
         </div>
 
-        <div class="pt-2 text-center">
+        <div class="pt-2 text-center space-y-2">
           <p class="text-[11px] text-[#787774]">
             Apenas <strong>Gestores</strong> e <strong>Onboarding</strong> acessam todas as empresas. Especialistas técnicos visualizam apenas seus processos atribuídos.
           </p>
+          <button type="button" onclick="fecharModalTrocarUsuario(); efetuarLogout();" class="text-xs text-red-600 hover:text-red-700 font-bold hover:underline block mx-auto cursor-pointer">
+            Sair completamente da conta (Logout)
+          </button>
         </div>
       </div>
     </div>
