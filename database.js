@@ -278,6 +278,8 @@ safeAdd('colaboradores', 'pin', 'TEXT DEFAULT "1234"');
 safeAdd('colaboradores', 'cor_avatar', 'TEXT DEFAULT "#0284c7"');
 safeAdd('colaboradores', 'perfil', 'TEXT DEFAULT "TECNICO"');
 safeAdd('colaboradores', 'foto_url', 'TEXT');
+safeAdd('colaboradores', 'token_redefinicao', 'TEXT');
+safeAdd('colaboradores', 'token_expiracao', 'DATETIME');
 safeAdd('pendencias', 'criado_por_nome', 'TEXT');
 safeAdd('pendencias', 'resolvido_por_nome', 'TEXT');
 safeAdd('ficha_abertura', 'faturamento_estimado', 'REAL');

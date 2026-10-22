@@ -5,6 +5,12 @@ const fs = require('fs');
 const https = require('https');
 const { exec } = require('child_process');
 const crypto = require('crypto');
+let nodemailer = null;
+try {
+  nodemailer = require('nodemailer');
+} catch (e) {
+  console.warn('Nodemailer não carregado:', e.message);
+}
 const { db, popularTarefasOnboarding } = require('./database');
 const { buscarCnaes, CNAE_CATALOG } = require('./cnae_database');
 
@@ -43,6 +49,118 @@ function registrarHistorico(clienteId, colabId, colabNome, acao, descricao) {
     `).run(histId, clienteId, colabId || null, colabNome || 'Sistema', acao, descricao);
   } catch (err) {
     console.error('Erro ao gravar histórico:', err);
+  }
+}
+
+// Helper para transporte de e-mails corporativos (Gmail Workspace / SMTP)
+function getMailTransporter() {
+  if (!nodemailer) return null;
+  const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER;
+  const gmailPass = process.env.GMAIL_APP_PASS || process.env.SMTP_PASS;
+
+  if (gmailUser && gmailPass) {
+    if (process.env.SMTP_HOST) {
+      return nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
+        auth: {
+          user: gmailUser,
+          pass: gmailPass
+        }
+      });
+    } else {
+      // Gmail por padrão (App Password)
+      return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailPass
+        }
+      });
+    }
+  }
+  return null;
+}
+
+// Enviar e-mail de definição ou primeiro acesso com branding Josana Mota
+async function enviarEmailDefinicaoSenha({ email, nome, token, req }) {
+  const host = req ? req.get('host') : 'onboarding-contabilidade-josana.onrender.com';
+  const protocol = req ? (req.headers['x-forwarded-proto'] || req.protocol || 'https') : 'https';
+  const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+  const link = `${baseUrl}/#definir-senha=${token}`;
+
+  const transporter = getMailTransporter();
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="utf-8">
+      <title>Definição de Senha - Josana Mota Contabilidade</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f7f7f5; margin: 0; padding: 24px; color: #2f3437; }
+        .card { max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #ededeb; overflow: hidden; box-shadow: 0 4px 20px rgba(10,33,61,0.06); }
+        .header { background-color: #0A213D; padding: 28px 24px; text-align: center; }
+        .logo-txt { color: #ffffff; font-size: 17px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin: 0; }
+        .logo-sub { color: #C5A059; font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; margin-top: 4px; }
+        .body { padding: 32px 28px; }
+        h1 { font-size: 18px; font-weight: 700; color: #0A213D; margin-top: 0; margin-bottom: 12px; }
+        p { font-size: 13px; line-height: 1.6; color: #4a4a48; margin: 0 0 16px 0; }
+        .btn-box { text-align: center; margin: 28px 0; }
+        .btn { display: inline-block; background-color: #0A213D; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 13px; padding: 13px 28px; border-radius: 10px; box-shadow: 0 3px 10px rgba(10,33,61,0.2); }
+        .info-box { background: #fafaf9; border: 1px solid #ededeb; border-radius: 10px; padding: 14px; font-size: 11px; color: #787774; margin-top: 20px; word-break: break-all; }
+        .footer { border-top: 1px solid #ededeb; padding: 16px 24px; text-align: center; font-size: 11px; color: #9b9a97; background: #fafaf9; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="header">
+          <div class="logo-txt">Josana Mota</div>
+          <div class="logo-sub">Contabilidade</div>
+        </div>
+        <div class="body">
+          <h1>Olá, ${nome || 'Colaborador(a)'}!</h1>
+          <p>Você foi cadastrado(a) no <strong>Sistema Integrado de Onboarding e Gestão Societária</strong> da Josana Mota Contabilidade.</p>
+          <p>Para ativar sua conta e definir sua senha pessoal de acesso com seu e-mail corporativo (<strong>${email}</strong>), clique no botão abaixo:</p>
+          
+          <div class="btn-box">
+            <a href="${link}" class="btn" target="_blank">Definir Minha Senha de Acesso</a>
+          </div>
+
+          <p style="font-size: 12px; color: #787774;">Por motivos de segurança corporativa, este link é intransferível e expira em <strong>24 horas</strong>.</p>
+
+          <div class="info-box">
+            Se o botão acima não funcionar, copie e cole o link a seguir no seu navegador:<br>
+            <a href="${link}" style="color: #C5A059; text-decoration: underline;">${link}</a>
+          </div>
+        </div>
+        <div class="footer">
+          Josana Mota Contabilidade • Sistema Interno de Gestão Societária<br>
+          Se você não reconhece este convite, por favor desconsidere este e-mail.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  if (transporter) {
+    try {
+      const fromAddr = process.env.SMTP_FROM || `"Josana Mota Contabilidade" <${process.env.GMAIL_USER || process.env.SMTP_USER}>`;
+      await transporter.sendMail({
+        from: fromAddr,
+        to: email,
+        subject: 'Josana Mota Contabilidade | Defina sua Senha de Acesso',
+        html: htmlContent
+      });
+      console.log(`[EMAIL ENVIADO] E-mail de definição de senha enviado para ${email}`);
+      return { sent: true, link };
+    } catch (err) {
+      console.error(`[ERRO EMAIL] Falha ao enviar via SMTP para ${email}:`, err.message);
+      return { sent: false, link, error: err.message };
+    }
+  } else {
+    console.log(`[EMAIL SIMULADO - SMTP NÃO CONFIGURADO] Link gerado para ${email}: ${link}`);
+    return { sent: false, link, warning: 'SMTP/Gmail não configurado no ambiente. Link de definição gerado com sucesso.' };
   }
 }
 
@@ -114,6 +232,154 @@ app.post('/api/alterar-pin', (req, res) => {
   }
 });
 
+// Solicitar link de primeiro acesso ou redefinição de senha
+app.post('/api/solicitar-definicao-senha', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !String(email).trim()) {
+      return res.status(400).json({ error: 'Por favor, informe seu e-mail corporativo.' });
+    }
+    const emailLimpo = String(email).trim().toLowerCase();
+    
+    // Busca exata ou por prefixo (ex: 'eduardo' ou 'eduardo@josanamota.com.br')
+    const colab = db.prepare(`
+      SELECT id, nome, email, perfil, ativo 
+      FROM colaboradores 
+      WHERE (
+        LOWER(TRIM(email)) = ? 
+        OR LOWER(TRIM(email)) = ? 
+        OR LOWER(TRIM(email)) LIKE ?
+      )
+    `).get(emailLimpo, `${emailLimpo}@josanamota.com.br`, `${emailLimpo}@%`);
+
+    if (!colab) {
+      return res.status(404).json({ error: 'E-mail não encontrado entre os colaboradores da Josana Mota Contabilidade. Solicite seu cadastro à Diretoria.' });
+    }
+
+    if (colab.ativo === 0) {
+      return res.status(403).json({ error: 'Esta conta de colaborador está inativa. Consulte o Gestor Geral.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiracao = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+
+    db.prepare('UPDATE colaboradores SET token_redefinicao = ?, token_expiracao = ? WHERE id = ?')
+      .run(token, expiracao, colab.id);
+
+    const emailResultado = await enviarEmailDefinicaoSenha({
+      email: colab.email,
+      nome: colab.nome,
+      token,
+      req
+    });
+
+    registrarHistorico(null, colab.id, colab.nome, 'TOKEN_SENHA_GERADO', `Link de ativação/definição gerado para ${colab.email}`);
+
+    res.json({
+      success: true,
+      email: colab.email,
+      nome: colab.nome,
+      email_enviado: emailResultado.sent,
+      link_direto: emailResultado.link,
+      mensagem: emailResultado.sent 
+        ? `Link de definição enviado com sucesso para ${colab.email}! Verifique sua caixa de entrada no Gmail.`
+        : `Link de definição gerado com sucesso para ${colab.email}.`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Validar token de ativação / redefinição de senha
+app.get('/api/validar-token-senha/:token', (req, res) => {
+  try {
+    const { token } = req.params;
+    if (!token) {
+      return res.status(400).json({ error: 'Token não fornecido.' });
+    }
+
+    const colab = db.prepare(`
+      SELECT id, nome, email, departamento, cargo, perfil, token_expiracao, ativo
+      FROM colaboradores
+      WHERE token_redefinicao = ?
+    `).get(token);
+
+    if (!colab) {
+      return res.status(404).json({ error: 'Link de definição inválido ou já utilizado. Por favor, solicite um novo link.' });
+    }
+
+    if (colab.ativo === 0) {
+      return res.status(403).json({ error: 'Conta inativa. Entre em contato com a Diretoria.' });
+    }
+
+    if (colab.token_expiracao && new Date(colab.token_expiracao) < new Date()) {
+      return res.status(410).json({ error: 'Este link de definição expirou após 24 horas. Por favor, solicite um novo link.' });
+    }
+
+    res.json({
+      valido: true,
+      colaborador: {
+        id: colab.id,
+        nome: colab.nome,
+        email: colab.email,
+        departamento: colab.departamento,
+        cargo: colab.cargo,
+        perfil: colab.perfil
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Salvar nova senha de acesso e invalidar token
+app.post('/api/redefinir-senha', (req, res) => {
+  try {
+    const { token, nova_senha } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: 'Token não fornecido.' });
+    }
+    if (!nova_senha || String(nova_senha).trim().length < 4) {
+      return res.status(400).json({ error: 'A nova senha deve ter no mínimo 4 caracteres.' });
+    }
+
+    const colab = db.prepare(`
+      SELECT id, nome, email, departamento, cargo, perfil, token_expiracao, ativo
+      FROM colaboradores
+      WHERE token_redefinicao = ?
+    `).get(token);
+
+    if (!colab) {
+      return res.status(404).json({ error: 'Link inválido ou já utilizado. Por favor, solicite um novo link.' });
+    }
+
+    if (colab.token_expiracao && new Date(colab.token_expiracao) < new Date()) {
+      return res.status(410).json({ error: 'Este link expirou. Por favor, solicite um novo link.' });
+    }
+
+    const senhaLimpa = String(nova_senha).trim();
+    db.prepare('UPDATE colaboradores SET pin = ?, token_redefinicao = NULL, token_expiracao = NULL WHERE id = ?')
+      .run(senhaLimpa, colab.id);
+
+    registrarHistorico(null, colab.id, colab.nome, 'SENHA_REDEFINIDA', `Nova senha definida via link seguro por ${colab.email}`);
+
+    res.json({
+      success: true,
+      message: 'Senha definida com sucesso! Você já pode entrar com seu e-mail e nova senha.',
+      colaborador: {
+        id: colab.id,
+        nome: colab.nome,
+        email: colab.email,
+        departamento: colab.departamento,
+        cargo: colab.cargo,
+        perfil: colab.perfil
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ==========================================
 // 2. CONFIGURAÇÕES & IA
 // ==========================================
@@ -163,7 +429,7 @@ app.get('/api/colaboradores', (req, res) => {
   }
 });
 
-app.post('/api/colaboradores', (req, res) => {
+app.post('/api/colaboradores', async (req, res) => {
   try {
     const auth = getColaboradorAutenticado(req);
     if (auth && auth.perfil !== 'GESTOR') {
@@ -174,12 +440,23 @@ app.post('/api/colaboradores', (req, res) => {
       return res.status(400).json({ error: 'Nome e Departamento são obrigatórios.' });
     }
     const id = uid('colab');
-    db.prepare(`
-      INSERT INTO colaboradores (id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil, foto_url, ativo)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `).run(id, nome, departamento, cargo || null, email || null, telefone || null, pin || '1234', cor_avatar || '#0A213D', perfil, foto_url);
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiracao = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
 
-    res.status(201).json({ success: true, id });
+    db.prepare(`
+      INSERT INTO colaboradores (id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil, foto_url, ativo, token_redefinicao, token_expiracao)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    `).run(id, nome, departamento, cargo || null, email || null, telefone || null, pin || '1234', cor_avatar || '#0A213D', perfil, foto_url, token, expiracao);
+
+    let linkAtivacao = null;
+    let emailEnviado = false;
+    if (email) {
+      const emailRes = await enviarEmailDefinicaoSenha({ email, nome, token, req });
+      linkAtivacao = emailRes.link;
+      emailEnviado = emailRes.sent;
+    }
+
+    res.status(201).json({ success: true, id, link_ativacao: linkAtivacao, email_enviado: emailEnviado });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -252,6 +529,51 @@ app.delete('/api/colaboradores/:id', (req, res) => {
     }
     db.prepare('DELETE FROM colaboradores WHERE id = ?').run(id);
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Enviar convite / link de primeiro acesso para colaborador existente
+app.post('/api/colaboradores/:id/enviar-convite', async (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    if (auth && auth.perfil !== 'GESTOR') {
+      return res.status(403).json({ error: 'Acesso negado: Apenas a Diretoria / Gestor Geral pode enviar convites.' });
+    }
+
+    const { id } = req.params;
+    const colab = db.prepare('SELECT id, nome, email, perfil, ativo FROM colaboradores WHERE id = ?').get(id);
+    if (!colab) {
+      return res.status(404).json({ error: 'Colaborador não encontrado.' });
+    }
+    if (!colab.email) {
+      return res.status(400).json({ error: 'Este colaborador não possui e-mail cadastrado.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiracao = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+    db.prepare('UPDATE colaboradores SET token_redefinicao = ?, token_expiracao = ? WHERE id = ?')
+      .run(token, expiracao, colab.id);
+
+    const emailResultado = await enviarEmailDefinicaoSenha({
+      email: colab.email,
+      nome: colab.nome,
+      token,
+      req
+    });
+
+    registrarHistorico(null, colab.id, colab.nome, 'CONVITE_ENVIADO', `Link de ativação gerado pelo gestor para ${colab.email}`);
+
+    res.json({
+      success: true,
+      email: colab.email,
+      email_enviado: emailResultado.sent,
+      link_direto: emailResultado.link,
+      mensagem: emailResultado.sent 
+        ? `Convite enviado para ${colab.email} com sucesso!` 
+        : `Link de ativação gerado com sucesso para ${colab.email}!`
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

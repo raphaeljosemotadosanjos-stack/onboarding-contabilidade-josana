@@ -77,6 +77,19 @@ function extrairTokenColeta() {
   return tokenQuery || tokenHash;
 }
 
+function extrairTokenSenha() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tokenQuery = urlParams.get('definir-senha') || urlParams.get('token');
+  const hash = window.location.hash;
+  let tokenHash = null;
+  if (hash.startsWith('#definir-senha=')) {
+    tokenHash = hash.replace('#definir-senha=', '').trim();
+  } else if (hash.startsWith('#redefinir-senha=')) {
+    tokenHash = hash.replace('#redefinir-senha=', '').trim();
+  }
+  return tokenQuery || tokenHash;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Inicialização do tema (Modo Noturno / Claro)
   inicializarModoNoturno();
@@ -88,7 +101,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // 2. Se for acesso ao sistema corporativo, carrega configurações e colaboradores
+  // 2. Se for link de ativação / definição de senha (#definir-senha=TOKEN)
+  const tokenSenha = extrairTokenSenha();
+  if (tokenSenha) {
+    iniciarTelaDefinirSenha(tokenSenha);
+    return;
+  }
+
+  // 3. Se for acesso ao sistema corporativo, carrega configurações e colaboradores
   await carregarConfiguracoes();
   await carregarColaboradores();
   inicializarUsuarioLogado();
@@ -99,6 +119,11 @@ window.addEventListener('hashchange', () => {
   const tokenColeta = extrairTokenColeta();
   if (tokenColeta) {
     iniciarVisualizacaoColetaExterna(tokenColeta);
+    return;
+  }
+  const tokenSenha = extrairTokenSenha();
+  if (tokenSenha) {
+    iniciarTelaDefinirSenha(tokenSenha);
   }
 });
 
@@ -176,10 +201,18 @@ function mostrarLandingLogin() {
   const landing = document.getElementById('tela-landing-login');
   const app = document.getElementById('app-sistema');
   const floatingChat = document.getElementById('btn-floating-chat-ia');
+  const telaDefinir = document.getElementById('tela-definir-senha');
+  const telaColeta = document.getElementById('tela-coleta-cliente');
 
   if (app) {
     app.classList.add('hidden');
     app.classList.remove('flex');
+  }
+  if (telaDefinir) {
+    telaDefinir.classList.add('hidden');
+  }
+  if (telaColeta) {
+    telaColeta.classList.add('hidden');
   }
   if (landing) {
     landing.classList.remove('hidden');
@@ -196,9 +229,17 @@ function mostrarAppSistema() {
   const landing = document.getElementById('tela-landing-login');
   const app = document.getElementById('app-sistema');
   const floatingChat = document.getElementById('btn-floating-chat-ia');
+  const telaDefinir = document.getElementById('tela-definir-senha');
+  const telaColeta = document.getElementById('tela-coleta-cliente');
 
   if (landing) {
     landing.classList.add('hidden');
+  }
+  if (telaDefinir) {
+    telaDefinir.classList.add('hidden');
+  }
+  if (telaColeta) {
+    telaColeta.classList.add('hidden');
   }
   if (app) {
     app.classList.remove('hidden');
@@ -279,6 +320,267 @@ function alternarVisibilidadeSenhaModal() {
     if (icon) icon.setAttribute('data-lucide', 'eye');
   }
   lucide.createIcons();
+}
+
+function alternarVisibilidadeSenhaGenerica(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (icon) icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    input.type = 'password';
+    if (icon) icon.setAttribute('data-lucide', 'eye');
+  }
+  lucide.createIcons();
+}
+
+// -------------------------------------------------------------------------
+// MODAL: RECUPERAÇÃO DE SENHA / PRIMEIRO ACESSO
+// -------------------------------------------------------------------------
+function abrirModalRecuperarSenha() {
+  const modal = document.getElementById('modal-recuperar-senha');
+  if (modal) {
+    modal.classList.remove('hidden');
+    const landingEmail = document.getElementById('landing-email-input')?.value?.trim() || document.getElementById('modal-trocar-email-input')?.value?.trim();
+    const recInput = document.getElementById('recuperar-email-input');
+    if (recInput) {
+      if (landingEmail) recInput.value = landingEmail;
+      setTimeout(() => recInput.focus(), 100);
+    }
+    const erro = document.getElementById('recuperar-senha-erro');
+    if (erro) erro.classList.add('hidden');
+    const suc = document.getElementById('recuperar-senha-sucesso');
+    if (suc) suc.classList.add('hidden');
+    const boxLink = document.getElementById('box-recuperar-link-direto');
+    if (boxLink) boxLink.classList.add('hidden');
+  }
+  const modalTrocar = document.getElementById('modal-trocar-usuario');
+  if (modalTrocar) modalTrocar.classList.add('hidden');
+  lucide.createIcons();
+}
+
+function fecharModalRecuperarSenha() {
+  const modal = document.getElementById('modal-recuperar-senha');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function solicitarLinkSenha(e) {
+  if (e) e.preventDefault();
+  const input = document.getElementById('recuperar-email-input');
+  const erroBox = document.getElementById('recuperar-senha-erro');
+  const erroTxt = document.getElementById('recuperar-senha-erro-txt');
+  const sucBox = document.getElementById('recuperar-senha-sucesso');
+  const sucTxt = document.getElementById('recuperar-senha-sucesso-txt');
+  const linkBox = document.getElementById('box-recuperar-link-direto');
+  const linkA = document.getElementById('link-recuperar-direto');
+  const btn = document.getElementById('btn-enviar-link-recuperar');
+
+  const email = input?.value?.trim();
+  if (!email) {
+    if (erroBox) erroBox.classList.remove('hidden');
+    if (erroTxt) erroTxt.textContent = 'Por favor, informe seu e-mail corporativo.';
+    if (input) input.focus();
+    return;
+  }
+
+  if (erroBox) erroBox.classList.add('hidden');
+  if (sucBox) sucBox.classList.add('hidden');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block"></span> <span>Enviando link...</span>`;
+  }
+
+  try {
+    const res = await fetch('/api/solicitar-definicao-senha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Não foi possível gerar o link de confirmação.');
+    }
+
+    if (sucBox) sucBox.classList.remove('hidden');
+    if (sucTxt) sucTxt.textContent = data.mensagem || 'Link de ativação gerado!';
+
+    if (linkBox && linkA && data.link_direto) {
+      linkBox.classList.remove('hidden');
+      linkA.href = data.link_direto;
+      linkA.textContent = data.link_direto;
+    }
+
+    mostrarToast('Link gerado com sucesso!', 'sucesso');
+  } catch (err) {
+    if (erroBox) erroBox.classList.remove('hidden');
+    if (erroTxt) erroTxt.textContent = err.message;
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="send" class="w-4 h-4 text-[#C5A059]"></i> <span>Enviar Link de Ativação</span>`;
+      lucide.createIcons();
+    }
+  }
+}
+
+// -------------------------------------------------------------------------
+// TELA EXCLUSIVA: DEFINIR / ATIVAR SENHA DE ACESSO
+// -------------------------------------------------------------------------
+let tokenSenhaAtual = null;
+
+async function iniciarTelaDefinirSenha(token) {
+  tokenSenhaAtual = token;
+  const telaDefinir = document.getElementById('tela-definir-senha');
+  const telaLanding = document.getElementById('tela-landing-login');
+  const appSistema = document.getElementById('app-sistema');
+  const telaColeta = document.getElementById('tela-coleta-cliente');
+
+  if (telaLanding) telaLanding.classList.add('hidden');
+  if (appSistema) appSistema.classList.add('hidden');
+  if (telaColeta) telaColeta.classList.add('hidden');
+  if (telaDefinir) telaDefinir.classList.remove('hidden');
+
+  const subtitulo = document.getElementById('definir-senha-subtitulo');
+  const boxColab = document.getElementById('definir-senha-box-colab');
+  const nomeEl = document.getElementById('definir-senha-colab-nome');
+  const perfilEl = document.getElementById('definir-senha-colab-perfil');
+  const emailEl = document.getElementById('definir-senha-colab-email');
+  const form = document.getElementById('form-definir-senha');
+  const boxInvalido = document.getElementById('definir-senha-invalido');
+  const boxInvalidoTxt = document.getElementById('definir-senha-invalido-txt');
+  const erroBox = document.getElementById('definir-senha-erro');
+  const sucBox = document.getElementById('definir-senha-sucesso');
+
+  if (erroBox) erroBox.classList.add('hidden');
+  if (sucBox) sucBox.classList.add('hidden');
+
+  try {
+    const res = await fetch(`/api/validar-token-senha/${encodeURIComponent(token)}`);
+    const data = await res.json();
+    if (!res.ok || !data.valido) {
+      throw new Error(data.error || 'Link de definição inválido ou expirado.');
+    }
+
+    const c = data.colaborador;
+    if (subtitulo) subtitulo.textContent = 'Crie sua nova senha de acesso ao sistema.';
+    if (boxColab) boxColab.classList.remove('hidden');
+    if (nomeEl) nomeEl.textContent = c.nome;
+    if (perfilEl) perfilEl.textContent = c.perfil;
+    if (emailEl) emailEl.textContent = `${c.email} • ${c.departamento}`;
+    if (form) form.classList.remove('hidden');
+    if (boxInvalido) boxInvalido.classList.add('hidden');
+  } catch (err) {
+    if (form) form.classList.add('hidden');
+    if (boxColab) boxColab.classList.add('hidden');
+    if (boxInvalido) boxInvalido.classList.remove('hidden');
+    if (boxInvalidoTxt) boxInvalidoTxt.textContent = err.message;
+  }
+  lucide.createIcons();
+}
+
+async function salvarNovaSenha(e) {
+  if (e) e.preventDefault();
+  const senhaInput = document.getElementById('input-definir-nova-senha');
+  const confirmaInput = document.getElementById('input-definir-confirma-senha');
+  const erroBox = document.getElementById('definir-senha-erro');
+  const erroTxt = document.getElementById('definir-senha-erro-txt');
+  const sucBox = document.getElementById('definir-senha-sucesso');
+  const sucTxt = document.getElementById('definir-senha-sucesso-txt');
+  const btn = document.getElementById('btn-salvar-nova-senha');
+
+  const novaSenha = senhaInput?.value?.trim();
+  const confirma = confirmaInput?.value?.trim();
+
+  if (!novaSenha || novaSenha.length < 4) {
+    if (erroBox) erroBox.classList.remove('hidden');
+    if (erroTxt) erroTxt.textContent = 'A senha deve conter no mínimo 4 caracteres.';
+    if (senhaInput) senhaInput.focus();
+    return;
+  }
+
+  if (novaSenha !== confirma) {
+    if (erroBox) erroBox.classList.remove('hidden');
+    if (erroTxt) erroTxt.textContent = 'As duas senhas digitadas não coincidem.';
+    if (confirmaInput) {
+      confirmaInput.focus();
+      confirmaInput.select();
+    }
+    return;
+  }
+
+  if (erroBox) erroBox.classList.add('hidden');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block"></span> <span>Salvando senha...</span>`;
+  }
+
+  try {
+    const res = await fetch('/api/redefinir-senha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: tokenSenhaAtual, nova_senha: novaSenha })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Erro ao definir senha.');
+    }
+
+    if (sucBox) sucBox.classList.remove('hidden');
+    if (sucTxt) sucTxt.textContent = 'Senha definida com sucesso! Entrando no sistema...';
+
+    // Salva o colaborador autenticado
+    estado.usuarioLogado = data.colaborador;
+    localStorage.setItem('onboarding_usuario_logado', JSON.stringify(data.colaborador));
+
+    setTimeout(() => {
+      window.location.hash = '';
+      mostrarAppSistema();
+      mostrarToast(`Senha cadastrada! Bem-vindo(a), ${data.colaborador.nome}!`, 'sucesso');
+    }, 1200);
+  } catch (err) {
+    if (erroBox) erroBox.classList.remove('hidden');
+    if (erroTxt) erroTxt.textContent = err.message;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-[#C5A059]"></i> <span>Salvar Senha e Entrar</span>`;
+      lucide.createIcons();
+    }
+  }
+}
+
+function gerarSenhaAleatoriaColab() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+  let pin = '';
+  for (let i = 0; i < 8; i++) {
+    pin += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  const input = document.getElementById('colab-form-pin');
+  if (input) input.value = pin;
+}
+
+async function enviarConviteColaborador(colabId, colabNome) {
+  if (!confirm(`Deseja gerar e enviar o link de ativação / definição de senha para ${colabNome}?`)) return;
+  try {
+    const res = await fetch(`/api/colaboradores/${colabId}/enviar-convite`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-colaborador-id': estado.usuarioLogado?.id || ''
+      }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Erro ao enviar convite.');
+    }
+    mostrarToast(data.mensagem || 'Convite enviado com sucesso!', 'sucesso');
+    if (data.link_direto) {
+      prompt('Link de ativação gerado! Copie para enviar ao colaborador via WhatsApp ou E-mail:', data.link_direto);
+    }
+  } catch (err) {
+    mostrarToast(err.message, 'erro');
+  }
 }
 
 async function realizarLoginLanding(e) {
@@ -2846,6 +3148,13 @@ async function renderColaboradores(container) {
                       <span>Editar</span>
                     </button>
                   ` : ''}
+
+                  ${isGestor && c.email ? `
+                    <button onclick="enviarConviteColaborador('${c.id}', '${(c.nome || 'Colaborador').replace(/'/g, "\\'")}')" class="inline-flex items-center space-x-1 px-2.5 py-1.5 bg-[#FAF6EE] hover:bg-[#F3EADA] text-[#0A213D] border border-[#E8D7B5] rounded-lg font-semibold text-[11px] transition" title="Enviar ou Gerar Link de Definição de Senha / Primeiro Acesso">
+                      <i data-lucide="key-round" class="w-3.5 h-3.5 text-[#C5A059]"></i>
+                      <span>Link Senha</span>
+                    </button>
+                  ` : ''}
                   
                   <button onclick="navegarPara('meu-painel', '${c.id}')" class="inline-flex items-center space-x-1 px-2.5 py-1.5 bg-[#FAF6EE] hover:bg-[#F3EADA] text-[#9A7736] border border-[#E8D7B5] rounded-lg font-semibold text-[11px] transition" title="Abrir Cockpit & IA de Produtividade deste colaborador">
                     <i data-lucide="layout-dashboard" class="w-3.5 h-3.5 text-[#C5A059]"></i>
@@ -2899,7 +3208,8 @@ function abrirModalNovoColaborador() {
   document.getElementById('colab-form-cor').value = '#0A213D';
   document.getElementById('colab-form-departamento').value = 'FISCAL';
   document.getElementById('colab-form-perfil').value = 'TECNICO';
-  document.getElementById('colab-form-pin').value = '1234';
+  document.getElementById('colab-form-pin').value = '';
+  document.getElementById('colab-form-pin').placeholder = 'Deixe em branco para envio de link';
   document.getElementById('colab-form-ativo').value = '1';
 
   // Preview padrão
@@ -2947,7 +3257,8 @@ function abrirModalEditarColaborador(colabId) {
   document.getElementById('colab-form-cor').value = colab.cor_avatar || '#0A213D';
   document.getElementById('colab-form-departamento').value = colab.departamento || 'FISCAL';
   document.getElementById('colab-form-perfil').value = colab.perfil || 'TECNICO';
-  document.getElementById('colab-form-pin').value = colab.pin || '1234';
+  document.getElementById('colab-form-pin').value = '';
+  document.getElementById('colab-form-pin').placeholder = 'Deixe em branco para manter a atual';
   document.getElementById('colab-form-ativo').value = colab.ativo === 0 ? '0' : '1';
 
   // Preview da foto
@@ -3037,7 +3348,7 @@ async function salvarColaboradorForm(event) {
   const cor_avatar = document.getElementById('colab-form-cor').value;
   const departamento = document.getElementById('colab-form-departamento').value;
   const perfil = document.getElementById('colab-form-perfil').value;
-  const pin = document.getElementById('colab-form-pin').value.trim() || '1234';
+  const pinDigitado = document.getElementById('colab-form-pin').value.trim();
   const ativo = parseInt(document.getElementById('colab-form-ativo').value, 10);
   const fotoBase64 = document.getElementById('colab-form-foto-base64').value;
   const fotoRemovida = document.getElementById('colab-form-foto-removida')?.value === '1';
@@ -3057,9 +3368,12 @@ async function salvarColaboradorForm(event) {
         cargo,
         email,
         telefone,
-        cor_avatar,
-        pin
+        cor_avatar
       };
+
+      if (pinDigitado) {
+        payload.pin = pinDigitado;
+      }
 
       const isGestor = (estado.usuarioLogado?.perfil === 'GESTOR');
       if (isGestor) {
@@ -3094,6 +3408,7 @@ async function salvarColaboradorForm(event) {
       mostrarToast('Perfil e permissões atualizados com sucesso!', 'sucesso');
     } else {
       // 2. CADASTRAR NOVO COLABORADOR
+      const pinFinal = pinDigitado || Math.random().toString(36).substring(2, 10);
       const payload = {
         nome,
         cargo,
@@ -3102,7 +3417,7 @@ async function salvarColaboradorForm(event) {
         cor_avatar,
         departamento,
         perfil,
-        pin
+        pin: pinFinal
       };
 
       const res = await fetch('/api/colaboradores', {
@@ -3124,7 +3439,16 @@ async function salvarColaboradorForm(event) {
         });
       }
 
-      mostrarToast('Novo colaborador cadastrado com sucesso!', 'sucesso');
+      if (resJson.link_ativacao) {
+        if (resJson.email_enviado) {
+          mostrarToast(`Colaborador cadastrado! E-mail de confirmação enviado para ${email}.`, 'sucesso');
+        } else {
+          mostrarToast('Novo colaborador cadastrado com sucesso!', 'sucesso');
+          prompt('Link de ativação gerado! Copie para enviar ao colaborador:', resJson.link_ativacao);
+        }
+      } else {
+        mostrarToast('Novo colaborador cadastrado com sucesso!', 'sucesso');
+      }
     }
 
     // Se o usuário editou seu próprio perfil, atualiza na sessão
