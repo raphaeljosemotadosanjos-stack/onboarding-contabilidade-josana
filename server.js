@@ -1605,6 +1605,41 @@ app.post('/api/clientes/:id/definir-prazo-etapa', (req, res) => {
 // ==========================================
 // 6. ATUALIZAÇÃO DIRETA DE TAREFAS (CHECK & RASTREABILIDADE)
 // ==========================================
+app.get('/api/tarefas-kanban', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    const { cliente_id } = req.query;
+    let sql = `
+      SELECT t.*, c.razao_social as cliente_nome, c.codigo_dominio, c.tipo_empresa, c.etapa_atual as cliente_etapa_atual,
+             col.nome as responsavel_nome, col.departamento as responsavel_departamento, col.cor_avatar as responsavel_cor_avatar, col.foto_url as responsavel_foto_url
+      FROM tarefas_checklist t
+      JOIN clientes c ON c.id = t.cliente_id
+      LEFT JOIN colaboradores col ON col.id = t.responsavel_colaborador_id
+      WHERE t.status != 'NAO_APLICAVEL'
+    `;
+    const params = [];
+
+    if (auth && auth.perfil === 'TECNICO') {
+      sql += ` AND (
+        c.resp_paralegal_id = ? OR c.resp_fiscal_id = ? OR c.resp_pessoal_id = ? OR c.resp_contabil_id = ?
+        OR t.responsavel_colaborador_id = ? OR t.departamento = ?
+      )`;
+      params.push(auth.id, auth.id, auth.id, auth.id, auth.id, auth.departamento);
+    }
+
+    if (cliente_id) {
+      sql += ' AND t.cliente_id = ?';
+      params.push(cliente_id);
+    }
+
+    sql += ' ORDER BY t.etapa_numero ASC, t.ordem ASC';
+    const tarefas = db.prepare(sql).all(...params);
+    res.json(tarefas);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.patch('/api/tarefas/:id', (req, res) => {
   try {
     const { id } = req.params;

@@ -1074,9 +1074,9 @@ function navegarPara(tela, param = null) {
     subtitulo.textContent = 'Visão Kanban das 7 Etapas';
     renderPipelineKanbanEtapas(container);
   } else if (tela === 'kanban-colaboradores') {
-    titulo.textContent = 'Kanban por Colaborador';
-    subtitulo.textContent = 'Distribuição de Atividades da Equipe';
-    renderKanbanColaboradores(container);
+    titulo.textContent = 'Kanban Operacional de Tarefas';
+    subtitulo.textContent = 'Filtro por Empresa e Visão por Etapa ou Colaborador';
+    renderKanbanColaboradores(container, param);
   } else if (tela === 'cliente-detalhes') {
     titulo.textContent = 'Ficha do Onboarding';
     subtitulo.textContent = 'Acompanhamento do Processo';
@@ -2297,103 +2297,434 @@ async function renderPipelineKanbanEtapas(container) {
 }
 
 // =========================================================================
-// 4. TELA: KANBAN GERAL POR COLABORADOR
+// 4. TELA: KANBAN GERAL POR ETAPA & COLABORADOR (COM FILTRO POR EMPRESA)
 // =========================================================================
-async function renderKanbanColaboradores(container) {
+async function renderKanbanColaboradores(container, empresaIdPreSelecionada = '') {
   container.innerHTML = `<div class="flex items-center justify-center p-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div></div>`;
   
   try {
-    const res = await fetch('/api/clientes');
-    const clientes = await res.json();
+    // Buscar clientes e todas as tarefas operacionais com dados unificados
+    const [resClientes, resTarefas] = await Promise.all([
+      fetch('/api/clientes'),
+      fetch('/api/tarefas-kanban')
+    ]);
 
-    // Buscar tarefas de todos os clientes ativos
-    const promessasTarefas = clientes.map(c => fetch(`/api/clientes/${c.id}`).then(r => r.json()));
-    const detalhesClientes = await Promise.all(promessasTarefas);
+    if (!resClientes.ok || !resTarefas.ok) {
+      throw new Error('Falha ao carregar dados do Kanban.');
+    }
 
-    let todasTarefas = [];
-    detalhesClientes.forEach(det => {
-      det.tarefas.forEach(t => {
-        todasTarefas.push({
-          ...t,
-          cliente_nome: det.cliente.razao_social,
-          cliente_dominio: det.cliente.codigo_dominio
-        });
-      });
-    });
+    const clientes = await resClientes.json();
+    const tarefas = await resTarefas.json();
 
+    window._kanbanClientes = Array.isArray(clientes) ? clientes : [];
+    window._kanbanTarefas = Array.isArray(tarefas) ? tarefas : [];
+    window._kanbanEmpresaId = empresaIdPreSelecionada || window._kanbanEmpresaId || '';
+    window._kanbanModo = window._kanbanModo || 'etapa'; // 'etapa' ou 'colaborador'
+    window._kanbanStatusFiltro = window._kanbanStatusFiltro || 'pendentes';
+    window._kanbanBusca = '';
+
+    // Renderizar a estrutura de controles (Toolbar)
     container.innerHTML = `
       <div class="space-y-4">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <h3 class="font-bold text-slate-900 text-sm">Quadro Kanban por Colaborador</h3>
-            <p class="text-xs text-slate-500">Veja e acompanhe as atividades distribuídas por membro da equipe técnica</p>
-          </div>
-          <span class="text-xs font-semibold text-slate-600">${todasTarefas.filter(t => t.status !== 'CONCLUIDO').length} tarefas pendentes no escritório</span>
-        </div>
-
-        <div class="flex space-x-3 overflow-x-auto pb-6">
-          ${estado.colaboradores.map(colab => {
-            const tarefasDoColab = todasTarefas.filter(t => t.responsavel_colaborador_id === colab.id && t.status !== 'CONCLUIDO');
-            return `
-              <div class="w-80 flex-shrink-0 bg-slate-200/60 rounded-xl p-3 border border-slate-200 flex flex-col max-h-[calc(100vh-210px)]">
-                <!-- CABEÇALHO DO COLABORADOR -->
-                <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-300">
-                  <div class="flex items-center space-x-2">
-                    ${obterAvatarColaboradorHtml(colab, 'w-7 h-7')}
-                    <div>
-                      <h4 class="font-bold text-xs text-slate-900">${colab.nome}</h4>
-                      <span class="text-[10px] text-slate-500">${colab.departamento}</span>
-                    </div>
-                  </div>
-                  <span class="bg-white text-slate-700 text-xs px-2 py-0.5 rounded-full font-bold shadow-xs">
-                    ${tarefasDoColab.length}
-                  </span>
-                </div>
-
-                <!-- LISTA DE CARDS DE TAREFAS -->
-                <div class="flex-1 overflow-y-auto space-y-2.5">
-                  ${tarefasDoColab.length === 0 ? `
-                    <div class="h-20 flex items-center justify-center text-slate-400 text-[11px] border-2 border-dashed border-slate-300 rounded-lg">
-                      Nenhuma tarefa pendente
-                    </div>
-                  ` : tarefasDoColab.map(t => {
-                    const hoje = new Date().toISOString().split('T')[0];
-                    const atrasado = t.prazo_data && t.prazo_data < hoje;
-                    return `
-                      <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm space-y-2">
-                        <div class="flex items-center justify-between">
-                          <span class="text-[10px] font-bold text-sky-800 bg-sky-50 px-1.5 py-0.2 rounded truncate max-w-[150px]">${t.cliente_nome}</span>
-                          <span class="text-[10px] text-slate-400">Etapa 0${t.etapa_numero}</span>
-                        </div>
-
-                        <p class="text-xs font-semibold text-slate-800">${t.titulo}</p>
-
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
-                          <span class="${atrasado ? 'text-red-600 font-bold' : 'text-slate-500'}">
-                            ${t.prazo ? `Prazo: ${t.prazo}` : 'Sem prazo'}
-                          </span>
-                          ${(estado.usuarioLogado?.perfil === 'GESTOR' || estado.usuarioLogado?.perfil === 'ONBOARDING' || t.responsavel_colaborador_id === estado.usuarioLogado?.id || t.departamento === estado.usuarioLogado?.departamento) ? `
-                            <button onclick="atualizarCheckRapido('${t.id}', true); navegarPara('kanban-colaboradores');" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded text-[10px] font-bold transition">
-                              Dar Check ✓
-                            </button>
-                          ` : `
-                            <span class="text-[10px] text-slate-400 font-medium" title="Apenas ${colab.nome} ou Gestores podem concluir esta atividade">🔒 Restrito</span>
-                          `}
-                        </div>
-                      </div>
-                    `;
-                  }).join('')}
-                </div>
+        <!-- TOOLBAR DE CONTROLES DO KANBAN -->
+        <div class="bg-white dark:bg-[#202020] p-4 rounded-2xl border border-slate-200 dark:border-[#333330] shadow-sm space-y-3">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm">Quadro Kanban de Tarefas</h3>
+                <span id="kanban-badge-total" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                  Carregando...
+                </span>
               </div>
-            `;
-          }).join('')}
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Acompanhamento e distribuição de atividades filtradas por Empresa e visualização por Etapa ou Colaborador</p>
+            </div>
+
+            <!-- SELETOR DE MODO DO QUADRO (POR ETAPA vs POR COLABORADOR) -->
+            <div class="inline-flex p-1 bg-slate-100 dark:bg-[#191919] rounded-xl border border-slate-200 dark:border-[#333330] text-xs font-semibold self-start md:self-auto">
+              <button id="btn-kanban-modo-etapa" onclick="alternarModoKanban('etapa')" class="px-3.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 ${window._kanbanModo === 'etapa' ? 'bg-white dark:bg-[#2A2A2A] text-[#0A213D] dark:text-[#F7F7F5] shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'}">
+                <i data-lucide="kanban" class="w-3.5 h-3.5 text-amber-600"></i>
+                <span>Quadros por Etapa (0 a 7)</span>
+              </button>
+              <button id="btn-kanban-modo-colab" onclick="alternarModoKanban('colaborador')" class="px-3.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 ${window._kanbanModo === 'colaborador' ? 'bg-white dark:bg-[#2A2A2A] text-[#0A213D] dark:text-[#F7F7F5] shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'}">
+                <i data-lucide="users-2" class="w-3.5 h-3.5 text-indigo-600"></i>
+                <span>Quadros por Colaborador</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- BARRA DE FILTROS: FILTRO POR EMPRESA, STATUS E BUSCA -->
+          <div class="pt-3 border-t border-slate-100 dark:border-[#2E2E2E] flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- FILTRO POR EMPRESA -->
+              <div class="flex items-center space-x-2">
+                <label for="filtro-kanban-empresa" class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                  <i data-lucide="building" class="w-3.5 h-3.5 text-sky-600"></i>
+                  <span>Empresa:</span>
+                </label>
+                <select id="filtro-kanban-empresa" onchange="filtrarKanbanPorEmpresa(this.value)" class="px-3 py-1.5 bg-slate-50 dark:bg-[#191919] border border-slate-200 dark:border-[#333330] rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none max-w-[280px] truncate cursor-pointer">
+                  <option value="">🏢 Todas as Empresas (${window._kanbanClientes.length})</option>
+                  ${window._kanbanClientes.map(c => `
+                    <option value="${c.id}" ${window._kanbanEmpresaId === c.id ? 'selected' : ''}>
+                      ${c.razao_social} ${c.codigo_dominio ? `(Cód. ${c.codigo_dominio})` : ''} • Etapa 0${c.etapa_atual}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <!-- FILTRO POR STATUS -->
+              <div class="flex items-center space-x-2">
+                <label for="filtro-kanban-status" class="text-xs font-bold text-slate-700 dark:text-slate-300">Status:</label>
+                <select id="filtro-kanban-status" onchange="filtrarKanbanPorStatus(this.value)" class="px-3 py-1.5 bg-slate-50 dark:bg-[#191919] border border-slate-200 dark:border-[#333330] rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none cursor-pointer">
+                  <option value="pendentes" ${window._kanbanStatusFiltro === 'pendentes' ? 'selected' : ''}>Pendentes & Em Andamento</option>
+                  <option value="atrasadas" ${window._kanbanStatusFiltro === 'atrasadas' ? 'selected' : ''}>🔴 Somente Vencidas</option>
+                  <option value="concluidas" ${window._kanbanStatusFiltro === 'concluidas' ? 'selected' : ''}>✓ Somente Concluídas</option>
+                  <option value="todas" ${window._kanbanStatusFiltro === 'todas' ? 'selected' : ''}>Todas as Tarefas</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- CAMPO DE BUSCA -->
+            <div class="relative min-w-[220px]">
+              <input type="text" id="filtro-kanban-busca" oninput="filtrarKanbanPorBusca(this.value)" placeholder="Buscar tarefa ou atividade..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-[#191919] border border-slate-200 dark:border-[#333330] rounded-xl text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+            </div>
+          </div>
         </div>
+
+        <!-- CONTAINER DOS QUADROS KANBAN -->
+        <div id="container-quadros-kanban" class="overflow-x-auto pb-6"></div>
       </div>
     `;
 
+    renderizarQuadrosKanban();
     lucide.createIcons();
   } catch (err) {
-    container.innerHTML = `<div class="p-6 bg-red-50 text-red-700 rounded-xl">Erro: ${err.message}</div>`;
+    container.innerHTML = `<div class="p-6 bg-red-50 text-red-700 rounded-xl">Erro ao carregar Kanban: ${err.message}</div>`;
+  }
+}
+
+function renderizarQuadrosKanban() {
+  const container = document.getElementById('container-quadros-kanban');
+  if (!container) return;
+
+  const todasTarefas = window._kanbanTarefas || [];
+  const empresaId = window._kanbanEmpresaId || '';
+  const statusFiltro = window._kanbanStatusFiltro || 'pendentes';
+  const termoBusca = (window._kanbanBusca || '').toLowerCase().trim();
+  const hoje = new Date().toISOString().split('T')[0];
+
+  // Filtragem das tarefas
+  const tarefasFiltradas = todasTarefas.filter(t => {
+    // 1. Filtro por empresa
+    if (empresaId && t.cliente_id !== empresaId) return false;
+
+    // 2. Filtro por status
+    const isConcluida = (t.status === 'CONCLUIDO' || t.status === 'CONCLUIDA');
+    if (statusFiltro === 'pendentes' && isConcluida) return false;
+    if (statusFiltro === 'concluidas' && !isConcluida) return false;
+    if (statusFiltro === 'atrasadas') {
+      if (isConcluida) return false;
+      if (!t.prazo_data || t.prazo_data >= hoje) return false;
+    }
+
+    // 3. Busca textual
+    if (termoBusca) {
+      const matchTitulo = (t.titulo || '').toLowerCase().includes(termoBusca);
+      const matchCliente = (t.cliente_nome || '').toLowerCase().includes(termoBusca);
+      const matchResp = (t.responsavel_nome || t.responsavel || '').toLowerCase().includes(termoBusca);
+      if (!matchTitulo && !matchCliente && !matchResp) return false;
+    }
+
+    return true;
+  });
+
+  // Atualizar badge total
+  const badgeTotal = document.getElementById('kanban-badge-total');
+  if (badgeTotal) {
+    const pendentesCount = tarefasFiltradas.filter(t => t.status !== 'CONCLUIDO' && t.status !== 'CONCLUIDA').length;
+    badgeTotal.textContent = `${pendentesCount} pendente(s) • ${tarefasFiltradas.length} total`;
+  }
+
+  // Renderizar o modo selecionado
+  if (window._kanbanModo === 'etapa') {
+    renderizarKanbanPorEtapas(container, tarefasFiltradas);
+  } else {
+    renderizarKanbanPorColaborador(container, tarefasFiltradas);
+  }
+
+  lucide.createIcons();
+}
+
+// -------------------------------------------------------------
+// VISUALIZAÇÃO 1: QUADROS POR ETAPA (0 A 7) COM COLABORADORES
+// -------------------------------------------------------------
+function renderizarKanbanPorEtapas(container, tarefas) {
+  const etapasInfo = [
+    { num: 0, titulo: 'Abertura & Setup Inicial' },
+    { num: 1, titulo: '01. Contrato & Alinhamento' },
+    { num: 2, titulo: '02. Sistemas & Acessos' },
+    { num: 3, titulo: '03. Parametrização & Saldos' },
+    { num: 4, titulo: '04. Documentos Iniciais' },
+    { num: 5, titulo: '05. Treinamento & Integração' },
+    { num: 6, titulo: '06. Primeira Competência' },
+    { num: 7, titulo: '07. Homologação & Aceites' }
+  ];
+
+  const hoje = new Date().toISOString().split('T')[0];
+
+  container.innerHTML = `
+    <div class="flex space-x-3.5 overflow-x-auto pb-4">
+      ${etapasInfo.map(etapa => {
+        const tarefasDestaEtapa = tarefas.filter(t => t.etapa_numero === etapa.num);
+        const pendentesDestaEtapa = tarefasDestaEtapa.filter(t => t.status !== 'CONCLUIDO' && t.status !== 'CONCLUIDA');
+        const corTopo = etapa.num === 0 ? 'bg-amber-100 text-amber-800 border-amber-200' : etapa.num === 7 ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-sky-100 text-sky-800 border-sky-200';
+
+        return `
+          <div class="w-80 min-w-[320px] max-w-[320px] flex-shrink-0 bg-slate-100 dark:bg-[#1E1E1E] rounded-2xl p-3 border border-slate-200 dark:border-[#333330] flex flex-col max-h-[calc(100vh-250px)] shadow-2xs">
+            <!-- CABEÇALHO DA ETAPA -->
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200 dark:border-[#2E2E2E]">
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] font-black px-1.5 py-0.5 rounded ${corTopo}">
+                  ${etapa.num === 0 ? 'SETUP' : `ETAPA 0${etapa.num}`}
+                </span>
+                <h4 class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate" title="${etapa.titulo}">${etapa.titulo}</h4>
+              </div>
+              <span class="bg-white dark:bg-[#2A2A2A] text-slate-700 dark:text-slate-200 text-xs px-2 py-0.5 rounded-full font-bold shadow-2xs border border-slate-200 dark:border-[#333330]">
+                ${tarefasDestaEtapa.length}
+              </span>
+            </div>
+
+            <!-- LISTA DE CARDS DA ETAPA -->
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+              ${tarefasDestaEtapa.length === 0 ? `
+                <div class="h-28 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200 dark:border-[#333330] rounded-xl p-4 text-center">
+                  <i data-lucide="check-circle" class="w-6 h-6 mb-1 opacity-50"></i>
+                  <span>Nenhuma tarefa</span>
+                </div>
+              ` : tarefasDestaEtapa.map(t => renderCardTarefaKanban(t, hoje, 'modo-etapa')).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// -------------------------------------------------------------
+// VISUALIZAÇÃO 2: QUADROS POR COLABORADOR COM AGRUPAMENTO POR ETAPA
+// -------------------------------------------------------------
+function renderizarKanbanPorColaborador(container, tarefas) {
+  const colaboradores = estado.colaboradores || [];
+  const hoje = new Date().toISOString().split('T')[0];
+
+  container.innerHTML = `
+    <div class="flex space-x-3.5 overflow-x-auto pb-4">
+      ${colaboradores.map(colab => {
+        // Tarefas atribuídas diretamente ou do departamento dele se não atribuídas
+        const tarefasDoColab = tarefas.filter(t => {
+          if (t.responsavel_colaborador_id === colab.id) return true;
+          if (!t.responsavel_colaborador_id && t.departamento === colab.departamento) return true;
+          return false;
+        });
+
+        // Agrupar tarefas deste colaborador pelas etapas presentes
+        const etapasPresentes = [0, 1, 2, 3, 4, 5, 6, 7].filter(num => tarefasDoColab.some(t => t.etapa_numero === num));
+
+        return `
+          <div class="w-80 min-w-[320px] max-w-[320px] flex-shrink-0 bg-slate-100 dark:bg-[#1E1E1E] rounded-2xl p-3 border border-slate-200 dark:border-[#333330] flex flex-col max-h-[calc(100vh-250px)] shadow-2xs">
+            <!-- CABEÇALHO DO COLABORADOR -->
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200 dark:border-[#2E2E2E]">
+              <div class="flex items-center space-x-2.5">
+                ${obterAvatarColaboradorHtml(colab, 'w-8 h-8')}
+                <div>
+                  <h4 class="font-bold text-xs text-slate-900 dark:text-slate-100">${colab.nome}</h4>
+                  <div class="flex items-center space-x-1.5">
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">${colab.departamento}</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">${colab.perfil}</span>
+                  </div>
+                </div>
+              </div>
+              <span class="bg-white dark:bg-[#2A2A2A] text-slate-700 dark:text-slate-200 text-xs px-2 py-0.5 rounded-full font-bold shadow-2xs border border-slate-200 dark:border-[#333330]">
+                ${tarefasDoColab.length}
+              </span>
+            </div>
+
+            <!-- LISTA DE CARDS DO COLABORADOR (SEPARADAS POR ETAPA) -->
+            <div class="flex-1 overflow-y-auto space-y-3 pr-1">
+              ${tarefasDoColab.length === 0 ? `
+                <div class="h-28 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200 dark:border-[#333330] rounded-xl p-4 text-center">
+                  <i data-lucide="check-check" class="w-6 h-6 mb-1 opacity-50"></i>
+                  <span>Nenhuma tarefa atribuída</span>
+                </div>
+              ` : etapasPresentes.map(numEtapa => {
+                const tarefasNestaEtapa = tarefasDoColab.filter(t => t.etapa_numero === numEtapa);
+                return `
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between px-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                      <span>${numEtapa === 0 ? 'Abertura / Setup' : `Etapa 0${numEtapa}`}</span>
+                      <span class="text-[10px] font-semibold">${tarefasNestaEtapa.length}</span>
+                    </div>
+                    <div class="space-y-2">
+                      ${tarefasNestaEtapa.map(t => renderCardTarefaKanban(t, hoje, 'modo-colab')).join('')}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// -------------------------------------------------------------
+// HELPER: RENDERIZAÇÃO DO CARD DE TAREFA INDIVIDUAL
+// -------------------------------------------------------------
+function renderCardTarefaKanban(t, hoje, contextoVisual) {
+  const isConcluida = (t.status === 'CONCLUIDO' || t.status === 'CONCLUIDA');
+  const atrasado = !isConcluida && t.prazo_data && t.prazo_data < hoje;
+  const venceHoje = !isConcluida && t.prazo_data === hoje;
+
+  // Permissões de conclusão
+  const isGestorOuOnboarding = (estado.usuarioLogado?.perfil === 'GESTOR' || estado.usuarioLogado?.perfil === 'ONBOARDING');
+  const eMeuDepartamento = (t.departamento === estado.usuarioLogado?.departamento);
+  const eMinhaAtribuicao = (t.responsavel_colaborador_id === estado.usuarioLogado?.id);
+  const podeEditar = isGestorOuOnboarding || eMeuDepartamento || eMinhaAtribuicao;
+
+  let badgePrazo = `<span class="text-[10px] text-slate-500 dark:text-slate-400">${t.prazo ? `Prazo: ${t.prazo}` : 'Sem prazo'}</span>`;
+  if (isConcluida) {
+    badgePrazo = `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.2 rounded">✓ Concluída</span>`;
+  } else if (atrasado) {
+    const diffDias = Math.max(1, Math.round((new Date(hoje) - new Date(t.prazo_data)) / (1000 * 60 * 60 * 24)));
+    badgePrazo = `<span class="text-[10px] font-bold text-rose-700 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 px-1.5 py-0.2 rounded">Vencida há ${diffDias}d</span>`;
+  } else if (venceHoje) {
+    badgePrazo = `<span class="text-[10px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-1.5 py-0.2 rounded">Vence Hoje</span>`;
+  }
+
+  // Identificação do responsável (especialmente útil no modo por etapa)
+  const nomeResp = t.responsavel_nome || t.responsavel || `${t.departamento} (A definir)`;
+  const avatarResp = t.responsavel_foto_url 
+    ? `<img src="${t.responsavel_foto_url}" class="w-4 h-4 rounded-full object-cover">`
+    : `<div class="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center" style="background-color: ${t.responsavel_cor_avatar || '#0A213D'}">${(nomeResp[0] || 'T').toUpperCase()}</div>`;
+
+  return `
+    <div class="bg-white dark:bg-[#202020] p-3 rounded-xl border border-slate-200 dark:border-[#333330] shadow-sm hover:border-sky-400 dark:hover:border-sky-600 transition space-y-2 group">
+      <!-- CABEÇALHO DO CARD: EMPRESA E ETAPA/SETOR -->
+      <div class="flex items-center justify-between gap-1">
+        <button onclick="verDetalhesCliente('${t.cliente_id}')" class="text-[10px] font-bold text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 px-2 py-0.5 rounded-md truncate max-w-[180px] text-left transition" title="Abrir ficha da empresa ${t.cliente_nome}">
+          ${t.cliente_nome}
+        </button>
+        <span class="text-[10px] font-mono text-slate-400 flex-shrink-0">
+          ${t.codigo_dominio ? `Cód. ${t.codigo_dominio}` : (contextoVisual === 'modo-colab' ? `Etapa 0${t.etapa_numero}` : '')}
+        </span>
+      </div>
+
+      <!-- TÍTULO DA ATIVIDADE -->
+      <p class="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug line-clamp-2" title="${t.titulo}">
+        ${t.titulo}
+      </p>
+
+      <!-- RESPONSÁVEL (SE ESTIVER NO MODO ETAPA) -->
+      ${contextoVisual === 'modo-etapa' ? `
+        <div class="flex items-center space-x-1.5 text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
+          ${avatarResp}
+          <span class="truncate font-medium">${nomeResp}</span>
+          <span class="text-slate-300 dark:text-slate-600">•</span>
+          <span class="font-bold text-slate-600 dark:text-slate-300">${t.departamento}</span>
+        </div>
+      ` : ''}
+
+      <!-- RODAPÉ DO CARD: PRAZO E BOTÃO DE CHECK -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#2E2E2E] text-[11px]">
+        <div>${badgePrazo}</div>
+        
+        <div>
+          ${podeEditar ? `
+            <button onclick="alternarCheckTarefaKanban('${t.id}', ${!isConcluida})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center space-x-1 ${isConcluida ? 'bg-slate-100 dark:bg-[#2A2A2A] text-slate-600 dark:text-slate-300 hover:bg-rose-50 hover:text-rose-600' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-200 dark:border-emerald-800'}">
+              <span>${isConcluida ? 'Desmarcar' : 'Dar Check ✓'}</span>
+            </button>
+          ` : `
+            <span class="text-[10px] text-slate-400 font-medium" title="Apenas o responsável ou a Diretoria podem concluir">🔒 Restrito</span>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// -------------------------------------------------------------
+// CONTROLADORES DE FILTROS E MODO DO KANBAN
+// -------------------------------------------------------------
+function alternarModoKanban(modo) {
+  window._kanbanModo = modo;
+  const btnEtapa = document.getElementById('btn-kanban-modo-etapa');
+  const btnColab = document.getElementById('btn-kanban-modo-colab');
+  if (btnEtapa && btnColab) {
+    if (modo === 'etapa') {
+      btnEtapa.className = 'px-3.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 bg-white dark:bg-[#2A2A2A] text-[#0A213D] dark:text-[#F7F7F5] shadow-xs';
+      btnColab.className = 'px-3.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900';
+    } else {
+      btnColab.className = 'px-3.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 bg-white dark:bg-[#2A2A2A] text-[#0A213D] dark:text-[#F7F7F5] shadow-xs';
+      btnEtapa.className = 'px-3.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900';
+    }
+  }
+  renderizarQuadrosKanban();
+}
+
+function filtrarKanbanPorEmpresa(empresaId) {
+  window._kanbanEmpresaId = empresaId;
+  renderizarQuadrosKanban();
+}
+
+function filtrarKanbanPorStatus(status) {
+  window._kanbanStatusFiltro = status;
+  renderizarQuadrosKanban();
+}
+
+function filtrarKanbanPorBusca(busca) {
+  window._kanbanBusca = busca;
+  renderizarQuadrosKanban();
+}
+
+async function alternarCheckTarefaKanban(tarefaId, novoMarcado) {
+  const status = novoMarcado ? 'CONCLUIDO' : 'NAO_INICIADO';
+  const usuario = estado.usuarioLogado || { id: null, nome: 'Colaborador' };
+
+  try {
+    const res = await fetch(`/api/tarefas/${tarefaId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status,
+        usuario_id: usuario.id,
+        usuario_nome: usuario.nome
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Falha ao atualizar tarefa.');
+    }
+
+    // Atualização otimista no estado em memória
+    if (window._kanbanTarefas) {
+      const t = window._kanbanTarefas.find(x => x.id === tarefaId);
+      if (t) {
+        t.status = status;
+        t.concluido_por_nome = novoMarcado ? usuario.nome : null;
+        if (novoMarcado) {
+          t.concluido_em_iso = new Date().toISOString();
+        } else {
+          t.concluido_em_iso = null;
+        }
+      }
+    }
+
+    mostrarToast(novoMarcado ? `Tarefa concluída por ${usuario.nome}!` : 'Tarefa desmarcada.', 'sucesso');
+    renderizarQuadrosKanban();
+  } catch (e) {
+    mostrarToast('Erro: ' + e.message, 'erro');
   }
 }
 
