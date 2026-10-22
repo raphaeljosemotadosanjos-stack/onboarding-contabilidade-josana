@@ -877,45 +877,6 @@ async function submeterLoginModal(e) {
     }
   }
 }
-      body: JSON.stringify({ colaborador_id: colabId, pin })
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      if (erroDiv && txtErro) {
-        txtErro.textContent = data.error || 'PIN de acesso incorreto.';
-        erroDiv.classList.remove('hidden');
-      }
-      if (inputPin) {
-        inputPin.value = '';
-        inputPin.focus();
-      }
-      return;
-    }
-
-    estado.usuarioLogado = data.colaborador;
-    localStorage.setItem('onboarding_usuario_logado', JSON.stringify(data.colaborador));
-    estado.loginObrigatorio = false;
-
-    atualizarDisplayUsuarioLogado();
-    aplicarPermissoesInterface();
-    document.getElementById('modal-trocar-usuario').classList.add('hidden');
-
-    mostrarToast(`Autenticado com sucesso: ${data.colaborador.nome} (${data.colaborador.perfil})`, 'sucesso');
-
-    // Redirecionamento inteligente por perfil
-    if (data.colaborador.perfil === 'TECNICO') {
-      navegarPara('meu-painel', data.colaborador.id);
-    } else {
-      navegarPara('dashboard');
-    }
-  } catch (err) {
-    if (erroDiv && txtErro) {
-      txtErro.textContent = 'Erro de comunicação ao validar PIN.';
-      erroDiv.classList.remove('hidden');
-    }
-  }
-}
 
 function abrirModalAlterarPin() {
   document.getElementById('input-pin-atual').value = '';
