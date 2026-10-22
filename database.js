@@ -3,7 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-const dbPath = path.join(__dirname, 'database.sqlite');
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'database.sqlite');
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
 const db = new DatabaseSync(dbPath);
 
 // Ativar chaves estrangeiras e modo WAL
@@ -630,6 +634,7 @@ function popularTarefasOnboarding(clienteId, escopo, tipoEmpresa, squad = {}) {
 
 module.exports = {
   db,
+  dbPath,
   popularTarefasOnboarding,
   CHECKLIST_TEMPLATES
 };

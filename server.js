@@ -11,7 +11,7 @@ try {
 } catch (e) {
   console.warn('Nodemailer não carregado:', e.message);
 }
-const { db, popularTarefasOnboarding } = require('./database');
+const { db, dbPath, popularTarefasOnboarding } = require('./database');
 const { buscarCnaes, CNAE_CATALOG } = require('./cnae_database');
 
 const app = express();
@@ -412,6 +412,23 @@ app.post('/api/config', (req, res) => {
 });
 
 // ==========================================
+// Download do banco de dados SQLite para Gestor (Backup & Continuidade)
+app.get('/api/admin/backup-banco', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    if (!auth || auth.perfil !== 'GESTOR') {
+      return res.status(403).json({ error: 'Acesso restrito: Apenas Gestores podem baixar o backup do banco de dados.' });
+    }
+    if (!fs.existsSync(dbPath)) {
+      return res.status(404).json({ error: 'Arquivo de banco de dados não encontrado.' });
+    }
+    const dataStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    res.download(dbPath, `backup-josana-contabil-${dataStr}.sqlite`);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 3. GESTÃO DE COLABORADORES
 // ==========================================
 app.get('/api/colaboradores', (req, res) => {

@@ -3634,6 +3634,41 @@ async function renderColaboradores(container) {
         }).join('')}
       </div>
 
+      <!-- SEÇÃO EXCLUSIVA DE GESTÃO: BACKUP E CONTINUIDADE DO BANCO DE DADOS -->
+      ${estado.usuarioLogado?.perfil === 'GESTOR' ? `
+        <div class="mt-6 pt-6 border-t border-[#EDEDEB] space-y-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-bold">
+              <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-[#0A213D] text-sm">Backup do Banco de Dados & Continuidade</h4>
+              <p class="text-[11px] text-[#787774]">Baixe uma cópia integral do banco SQLite com todas as empresas, tarefas, prazos e equipe.</p>
+            </div>
+          </div>
+
+          <div class="p-4 bg-[#F7F7F5] rounded-xl border border-[#EDEDEB] space-y-3 text-xs">
+            <div class="flex items-start space-x-2 text-[#2F3437]">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+              <div>
+                <p class="font-semibold text-[#0A213D]">Acesso 24/7 na Nuvem e Portabilidade Total:</p>
+                <p class="text-[11px] text-[#787774] mt-0.5 leading-relaxed">
+                  O sistema está ativo na nuvem (Render) e pode ser acessado de qualquer computador ou celular mesmo com sua máquina pessoal desligada.
+                  Você pode baixar o arquivo do banco de dados a qualquer momento para ter uma cópia de segurança em seu computador.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-[#EDEDEB]">
+              <span class="text-[11px] font-mono text-[#787774]">Formato: SQLite (.sqlite)</span>
+              <button type="button" onclick="baixarBackupBanco()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-2 cursor-pointer">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Baixar Backup do Banco</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
     </div>
   `;
 
@@ -4159,10 +4194,57 @@ async function renderConfiguracoes(container) {
           </button>
         </div>
       </form>
+
+      <!-- SEÇÃO EXCLUSIVA DE GESTÃO: BACKUP E CONTINUIDADE DO BANCO DE DADOS -->
+      ${estado.usuarioLogado?.perfil === 'GESTOR' ? `
+        <div class="mt-6 pt-6 border-t border-[#EDEDEB] space-y-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-bold">
+              <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-[#0A213D] text-sm">Backup do Banco de Dados & Continuidade</h4>
+              <p class="text-[11px] text-[#787774]">Baixe uma cópia integral do banco SQLite com todas as empresas, tarefas, prazos e equipe.</p>
+            </div>
+          </div>
+
+          <div class="p-4 bg-[#F7F7F5] rounded-xl border border-[#EDEDEB] space-y-3 text-xs">
+            <div class="flex items-start space-x-2 text-[#2F3437]">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+              <div>
+                <p class="font-semibold text-[#0A213D]">Acesso 24/7 na Nuvem e Portabilidade Total:</p>
+                <p class="text-[11px] text-[#787774] mt-0.5 leading-relaxed">
+                  O sistema está ativo na nuvem (Render) e pode ser acessado de qualquer computador ou celular mesmo com sua máquina pessoal desligada.
+                  Você pode baixar o arquivo do banco de dados a qualquer momento para ter uma cópia de segurança em seu computador.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-[#EDEDEB]">
+              <span class="text-[11px] font-mono text-[#787774]">Formato: SQLite (.sqlite)</span>
+              <button type="button" onclick="baixarBackupBanco()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-2 cursor-pointer">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Baixar Backup do Banco</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
     </div>
   `;
 
   lucide.createIcons();
+}
+
+
+function baixarBackupBanco() {
+  const usuario = estado.usuarioLogado;
+  if (!usuario || usuario.perfil !== 'GESTOR') {
+    mostrarToast('Apenas Gestores podem baixar cópia do banco.', 'erro');
+    return;
+  }
+  mostrarToast('Iniciando download do backup do banco...', 'info');
+  window.location.href = `/api/admin/backup-banco?colab_id=${encodeURIComponent(usuario.id)}`;
 }
 
 async function salvarConfiguracoes(event) {
