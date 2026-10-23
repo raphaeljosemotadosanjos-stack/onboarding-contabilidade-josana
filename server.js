@@ -3302,6 +3302,191 @@ app.get('/api/coleta-externa/:token/rastreio', (req, res) => {
   }
 });
 
+// =========================================================================
+// MÓDULO: CHAT INTERNO DA EQUIPE (POR EMPRESA & MURAL GERAL DO ESCRITÓRIO)
+// =========================================================================
+
+// 1. Mensagens Internas Vinculadas à Empresa
+app.get('/api/clientes/:id/mensagens', (req, res) => {
+  try {
+    const { id } = req.params;
+    const mensagens = db.prepare(`
+      SELECT m.*, c.foto_url
+      FROM mensagens_internas_cliente m
+      LEFT JOIN colaboradores c ON c.id = m.colaborador_id
+      WHERE m.cliente_id = ?
+      ORDER BY m.created_at ASC
+    `).all(id);
+    res.json(mensagens);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/clientes/:id/mensagens', (req, res) => {
+  try {
+    const { id } = req.params;
+    const auth = getColaboradorAutenticado(req);
+    const { mensagem, mencao_departamento, fixado } = req.body;
+
+    if (!mensagem || !mensagem.trim()) {
+      return res.status(400).json({ error: 'A mensagem não pode estar vazia.' });
+    }
+
+    const msgId = uid('msg');
+    const colabNome = auth?.nome || 'Colaborador';
+    const colabId = auth?.id || 'colab_0';
+    const colabDep = auth?.departamento || 'GERAL';
+    const colabCor = auth?.cor_avatar || '#0A213D';
+
+    db.prepare(`
+      INSERT INTO mensagens_internas_cliente (
+        id, cliente_id, colaborador_id, colaborador_nome, colaborador_departamento, colaborador_cor, mensagem, mencao_departamento, fixado
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      msgId,
+      id,
+      colabId,
+      colabNome,
+      colabDep,
+      colabCor,
+      mensagem.trim(),
+      mencao_departamento || null,
+      fixado ? 1 : 0
+    );
+
+    if (fixado) {
+      registrarHistorico(id, colabId, colabNome, 'AVISO_FIXADO', `Fixou um aviso importante na comunicação da empresa: "${mensagem.trim().substring(0, 60)}..."`);
+    }
+
+    const novaMensagem = db.prepare('SELECT * FROM mensagens_internas_cliente WHERE id = ?').get(msgId);
+    res.status(201).json(novaMensagem);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/clientes/:id/mensagens/:msgId/fixar', (req, res) => {
+  try {
+    const { id, msgId } = req.params;
+    db.prepare(`
+      UPDATE mensagens_internas_cliente
+      SET fixado = CASE WHEN fixado = 1 THEN 0 ELSE 1 END
+      WHERE id = ? AND cliente_id = ?
+    `).run(msgId, id);
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/clientes/:id/mensagens/:msgId', (req, res) => {
+  try {
+    const { id, msgId } = req.params;
+    const auth = getColaboradorAutenticado(req);
+
+    const msg = db.prepare('SELECT * FROM mensagens_internas_cliente WHERE id = ?').get(msgId);
+    if (!msg) return res.status(404).json({ error: 'Mensagem não encontrada.' });
+
+    // Apenas o autor ou Gestor/Onboarding podem excluir
+    if (auth && auth.perfil === 'TECNICO' && msg.colaborador_id !== auth.id) {
+      return res.status(403).json({ error: 'Permissão negada para excluir mensagem de outro colaborador.' });
+    }
+
+    db.prepare('DELETE FROM mensagens_internas_cliente WHERE id = ?').run(msgId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Mural Geral de Avisos e Comunicados do Escritório
+app.get('/api/mural-avisos', (req, res) => {
+  try {
+    const avisos = db.prepare(`
+      SELECT m.*, c.foto_url
+      FROM mural_avisos_equipe m
+      LEFT JOIN colaboradores c ON c.id = m.colaborador_id
+      ORDER BY m.fixado DESC, m.created_at DESC
+    `).all();
+    res.json(avisos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/mural-avisos', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    const { titulo, mensagem, tipo, fixado } = req.body;
+
+    if (!mensagem || !mensagem.trim()) {
+      return res.status(400).json({ error: 'A mensagem do comunicado não pode estar vazia.' });
+    }
+
+    const avisoId = uid('mural');
+    const colabNome = auth?.nome || 'Colaborador';
+    const colabId = auth?.id || 'colab_0';
+    const colabDep = auth?.departamento || 'GERAL';
+    const colabCor = auth?.cor_avatar || '#0A213D';
+
+    db.prepare(`
+      INSERT INTO mural_avisos_equipe (
+        id, colaborador_id, colaborador_nome, colaborador_departamento, colaborador_cor, titulo, mensagem, tipo, fixado
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      avisoId,
+      colabId,
+      colabNome,
+      colabDep,
+      colabCor,
+      titulo ? titulo.trim() : null,
+      mensagem.trim(),
+      tipo || 'INFO',
+      fixado ? 1 : 0
+    );
+
+    const novoAviso = db.prepare('SELECT * FROM mural_avisos_equipe WHERE id = ?').get(avisoId);
+    res.status(201).json(novoAviso);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/mural-avisos/:id/fixar', (req, res) => {
+  try {
+    const { id } = req.params;
+    db.prepare(`
+      UPDATE mural_avisos_equipe
+      SET fixado = CASE WHEN fixado = 1 THEN 0 ELSE 1 END
+      WHERE id = ?
+    `).run(id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/mural-avisos/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const auth = getColaboradorAutenticado(req);
+
+    const aviso = db.prepare('SELECT * FROM mural_avisos_equipe WHERE id = ?').get(id);
+    if (!aviso) return res.status(404).json({ error: 'Aviso não encontrado.' });
+
+    if (auth && auth.perfil === 'TECNICO' && aviso.colaborador_id !== auth.id) {
+      return res.status(403).json({ error: 'Permissão negada para excluir comunicado de outro colaborador.' });
+    }
+
+    db.prepare('DELETE FROM mural_avisos_equipe WHERE id = ?').run(id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // ========================================================
 // 12. MANUAL DO SISTEMA & CHAT COM IA DE SUPORTE

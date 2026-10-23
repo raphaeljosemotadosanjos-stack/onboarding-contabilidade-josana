@@ -1219,6 +1219,10 @@ function navegarPara(tela, param = null) {
     titulo.textContent = 'Modelos de Checklist (Mestre)';
     subtitulo.textContent = 'Personalização de etapas e tarefas para os próximos processos de clientes';
     renderModelosChecklist(container);
+  } else if (tela === 'mural-equipe') {
+    titulo.textContent = 'Mural de Recados da Equipe';
+    subtitulo.textContent = 'Comunicados internos, avisos de sistemas e comunicados da diretoria';
+    renderMuralEquipe(container);
   }
 
   lucide.createIcons();
@@ -3040,6 +3044,9 @@ async function renderClienteDetalhes(container, clienteId) {
             <button onclick="alternarModoVisualizacao('kanban-colaborador')" id="btn-modo-kanban-colaborador" class="px-3 py-1 rounded-md text-xs font-bold transition ${estado.modoVisualizacaoCliente === 'kanban-colaborador' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
               <i data-lucide="users" class="w-3.5 h-3.5 inline mr-1"></i> Kanban por Colaborador
             </button>
+            <button onclick="alternarModoVisualizacao('chat-empresa')" id="btn-modo-chat-empresa" class="px-3 py-1 rounded-md text-xs font-bold transition ${estado.modoVisualizacaoCliente === 'chat-empresa' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+              <i data-lucide="message-square-text" class="w-3.5 h-3.5 inline mr-1 text-emerald-600"></i> Comunicação Interna da Equipe
+            </button>
           </div>
 
           <div class="flex items-center space-x-2">
@@ -3066,7 +3073,7 @@ function alternarModoVisualizacao(modo) {
   estado.modoVisualizacaoCliente = modo;
   renderModoVisualizacaoAtual();
 
-  ['planilha', 'kanban-status', 'kanban-colaborador'].forEach(m => {
+  ['planilha', 'kanban-status', 'kanban-colaborador', 'chat-empresa'].forEach(m => {
     const btn = document.getElementById(`btn-modo-${m}`);
     if (btn) {
       if (m === modo) {
@@ -3320,6 +3327,8 @@ function renderModoVisualizacaoAtual() {
         }).join('')}
       </div>
     `;
+  } else if (estado.modoVisualizacaoCliente === 'chat-empresa') {
+    renderChatInternoCliente(container, estado.clienteDetalhes.cliente.id);
   }
 }
 
@@ -7643,6 +7652,437 @@ async function excluirTarefaTemplate(id) {
     if (!res.ok) throw new Error('Erro ao excluir tarefa.');
     mostrarToast('Tarefa removida do modelo mestre!', 'sucesso');
     renderModelosChecklist(document.getElementById('view-container'));
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// =========================================================================
+// MÓDULO: CHAT INTERNO DA EQUIPE (POR EMPRESA & MURAL GERAL)
+// =========================================================================
+
+async function renderChatInternoCliente(container, clienteId) {
+  container.innerHTML = `<div class="flex items-center justify-center p-8"><div class="animate-spin rounded-full h-7 w-7 border-b-2 border-emerald-600"></div></div>`;
+
+  try {
+    const res = await fetch(`/api/clientes/${clienteId}/mensagens`);
+    if (!res.ok) throw new Error('Erro ao carregar mensagens internas.');
+    const mensagens = await res.json();
+
+    const fixadas = mensagens.filter(m => m.fixado === 1);
+    const usuarioLogado = estado.usuarioLogado || { id: null, nome: 'Colaborador', perfil: 'TECNICO' };
+
+    container.innerHTML = `
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+        <!-- CABEÇALHO DO CHAT DA EMPRESA -->
+        <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0">
+          <div class="flex items-center space-x-2.5">
+            <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+              <i data-lucide="message-square-text" class="w-4 h-4"></i>
+            </span>
+            <div>
+              <h4 class="font-bold text-slate-900 text-xs">Comunicação Interna & Alinhamento Departamental</h4>
+              <p class="text-[11px] text-slate-500">Histórico de notas, avisos de protocolos e alinhamentos entre os setores desta empresa</p>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-full self-start sm:self-auto">
+            ${mensagens.length} mensagem(ns) registrada(s)
+          </span>
+        </div>
+
+        <!-- BOX DE AVISOS FIXADOS (SE HOUVER) -->
+        ${fixadas.length > 0 ? `
+          <div class="p-3.5 bg-amber-50/80 border-b border-amber-200 space-y-2">
+            <div class="flex items-center space-x-1.5 text-xs font-bold text-amber-900">
+              <i data-lucide="pin" class="w-3.5 h-3.5 text-amber-700"></i>
+              <span>Avisos Fixados & Prioridades desta Empresa (${fixadas.length}):</span>
+            </div>
+            <div class="space-y-1.5">
+              ${fixadas.map(f => `
+                <div class="p-2.5 bg-white border border-amber-300 rounded-xl text-xs flex items-start justify-between gap-2 shadow-2xs">
+                  <div>
+                    <span class="font-bold text-slate-800">${f.colaborador_nome} (${f.colaborador_departamento || 'Geral'}):</span>
+                    <span class="text-slate-700 ml-1 whitespace-pre-wrap">${f.mensagem}</span>
+                  </div>
+                  <button onclick="alternarFixarMensagemCliente('${clienteId}', '${f.id}')" class="text-amber-700 hover:text-amber-900 text-[10px] font-bold underline flex-shrink-0" title="Desafixar aviso">
+                    Desafixar
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- THREAD / LISTA DE MENSAGENS -->
+        <div id="chat-mensagens-thread" class="flex-1 p-5 overflow-y-auto space-y-3.5 max-h-[440px] bg-slate-50/30">
+          ${mensagens.length === 0 ? `
+            <div class="text-center py-12 text-slate-400 space-y-2">
+              <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                <i data-lucide="messages-square" class="w-6 h-6"></i>
+              </div>
+              <p class="font-medium text-xs text-slate-600">Nenhuma mensagem registrada nesta empresa ainda.</p>
+              <p class="text-[11px] text-slate-400">Use o campo abaixo para alinhar protocolos, documentos e status com os outros departamentos.</p>
+            </div>
+          ` : mensagens.map(m => {
+            const ehMinha = m.colaborador_id === usuarioLogado.id;
+            const podeExcluir = ehMinha || usuarioLogado.perfil === 'GESTOR' || usuarioLogado.perfil === 'ONBOARDING';
+            const dataFmt = new Date(m.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+            
+            const depCores = {
+              'PARALEGAL': 'bg-amber-100 text-amber-800 border-amber-200',
+              'FISCAL': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+              'PESSOAL': 'bg-blue-100 text-blue-800 border-blue-200',
+              'CONTABIL': 'bg-purple-100 text-purple-800 border-purple-200',
+              'IMPLANTACAO': 'bg-sky-100 text-sky-800 border-sky-200',
+              'DIRETORIA': 'bg-indigo-100 text-indigo-900 border-indigo-200'
+            };
+            const badgeCor = depCores[m.colaborador_departamento] || 'bg-slate-100 text-slate-700 border-slate-200';
+
+            return `
+              <div class="p-3.5 rounded-2xl border transition shadow-2xs ${m.fixado ? 'bg-amber-50/40 border-amber-300' : 'bg-white border-slate-200 hover:border-slate-300'}">
+                <div class="flex items-start justify-between gap-2 mb-1.5">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-6 h-6 rounded-full text-white font-bold flex items-center justify-center text-[10px] flex-shrink-0 shadow-2xs" style="background-color: ${m.colaborador_cor || '#0A213D'}">
+                      ${m.colaborador_nome.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                    </div>
+                    <span class="font-bold text-slate-900 text-xs">${m.colaborador_nome}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold border ${badgeCor}">
+                      ${m.colaborador_departamento || 'Geral'}
+                    </span>
+                    ${m.mencao_departamento ? `
+                      <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-sky-600 text-white shadow-2xs">
+                        @${m.mencao_departamento}
+                      </span>
+                    ` : ''}
+                    ${m.fixado ? `
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 flex items-center space-x-0.5">
+                        <i data-lucide="pin" class="w-2.5 h-2.5"></i>
+                        <span>Fixado</span>
+                      </span>
+                    ` : ''}
+                  </div>
+                  <div class="flex items-center space-x-2 text-[10px] text-slate-400">
+                    <span>${dataFmt}</span>
+                    <button onclick="alternarFixarMensagemCliente('${clienteId}', '${m.id}')" class="hover:text-amber-600 transition" title="${m.fixado ? 'Desafixar mensagem' : 'Fixar mensagem no topo'}">
+                      <i data-lucide="pin" class="w-3.5 h-3.5 ${m.fixado ? 'text-amber-600' : 'text-slate-400'}"></i>
+                    </button>
+                    ${podeExcluir ? `
+                      <button onclick="excluirMensagemCliente('${clienteId}', '${m.id}')" class="hover:text-rose-600 transition" title="Excluir mensagem">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+                <div class="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap pl-8">
+                  ${m.mensagem}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- BARRA INFERIOR DE ENVIO DE MENSAGENS -->
+        <form onsubmit="enviarMensagemInternaCliente(event, '${clienteId}')" class="p-4 bg-white border-t border-slate-200 space-y-2.5 flex-shrink-0">
+          <!-- PILLS DE MENÇÃO RÁPIDA -->
+          <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+            <span class="font-bold text-slate-500 mr-1">Notificar setor:</span>
+            <button type="button" onclick="adicionarMencaoAoChat('@Todos')" class="px-2 py-0.5 bg-slate-100 hover:bg-sky-50 hover:text-sky-700 text-slate-700 font-bold rounded-lg border border-slate-200 transition text-[10px]">
+              @Todos
+            </button>
+            <button type="button" onclick="adicionarMencaoAoChat('@Paralegal')" class="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-lg border border-amber-200 transition text-[10px]">
+              @Paralegal
+            </button>
+            <button type="button" onclick="adicionarMencaoAoChat('@Fiscal')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-lg border border-emerald-200 transition text-[10px]">
+              @Fiscal
+            </button>
+            <button type="button" onclick="adicionarMencaoAoChat('@Pessoal')" class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded-lg border border-blue-200 transition text-[10px]">
+              @Pessoal
+            </button>
+            <button type="button" onclick="adicionarMencaoAoChat('@Contábil')" class="px-2 py-0.5 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold rounded-lg border border-purple-200 transition text-[10px]">
+              @Contábil
+            </button>
+            <button type="button" onclick="adicionarMencaoAoChat('@Coordenação')" class="px-2 py-0.5 bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold rounded-lg border border-sky-200 transition text-[10px]">
+              @Coordenação
+            </button>
+          </div>
+
+          <!-- CAMPO DE DIGITAÇÃO -->
+          <div class="relative">
+            <textarea id="input-chat-empresa-texto" rows="3" required placeholder="Escreva uma mensagem ou alinhamento para a equipe desta empresa... (Pressione Enter para enviar, Shift+Enter para nova linha)" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); enviarMensagemInternaCliente(event, '${clienteId}'); }" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none leading-relaxed resize-none"></textarea>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-600 font-medium">
+              <input type="checkbox" id="chk-chat-fixar" class="rounded text-amber-600 focus:ring-amber-500">
+              <span>📌 Fixar como aviso prioritário no topo desta empresa</span>
+            </label>
+
+            <button type="submit" id="btn-chat-empresa-enviar" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center space-x-1.5 active:scale-95">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              <span>Enviar Mensagem</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    lucide.createIcons();
+
+    // Rolar para o final do histórico
+    setTimeout(() => {
+      const thread = document.getElementById('chat-mensagens-thread');
+      if (thread) thread.scrollTop = thread.scrollHeight;
+    }, 100);
+  } catch (err) {
+    container.innerHTML = `<div class="p-6 bg-rose-50 text-rose-700 rounded-xl font-bold">Erro: ${err.message}</div>`;
+  }
+}
+
+function adicionarMencaoAoChat(tag) {
+  const input = document.getElementById('input-chat-empresa-texto');
+  if (!input) return;
+  input.value = `${tag} ` + input.value;
+  input.focus();
+}
+
+async function enviarMensagemInternaCliente(event, clienteId) {
+  if (event && event.preventDefault) event.preventDefault();
+
+  const input = document.getElementById('input-chat-empresa-texto');
+  const chkFixar = document.getElementById('chk-chat-fixar');
+  const btn = document.getElementById('btn-chat-empresa-enviar');
+
+  if (!input || !input.value.trim()) return;
+
+  const texto = input.value.trim();
+  const fixado = chkFixar ? (chkFixar.checked ? 1 : 0) : 0;
+
+  // Detectar menção (@Fiscal, @Paralegal, @Pessoal, @Contabil, @Todos)
+  let mencao = null;
+  const matchMencao = texto.match(/@(fiscal|paralegal|pessoal|cont[áa]bil|coordena[çc][ãa]o|todos)/i);
+  if (matchMencao) {
+    mencao = matchMencao[1].toUpperCase().replace('Á', 'A').replace('ÇÃ', 'CA');
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="inline-block animate-spin mr-1">⟳</span> Enviando...`;
+  }
+
+  try {
+    const res = await fetch(`/api/clientes/${clienteId}/mensagens`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mensagem: texto,
+        mencao_departamento: mencao,
+        fixado
+      })
+    });
+    if (!res.ok) throw new Error('Erro ao registrar mensagem interna.');
+
+    input.value = '';
+    if (chkFixar) chkFixar.checked = false;
+
+    renderChatInternoCliente(document.getElementById('container-modo-visualizacao'), clienteId);
+  } catch (err) {
+    alert(err.message);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="send" class="w-3.5 h-3.5"></i><span>Enviar Mensagem</span>`;
+      lucide.createIcons();
+    }
+  }
+}
+
+async function alternarFixarMensagemCliente(clienteId, msgId) {
+  try {
+    const res = await fetch(`/api/clientes/${clienteId}/mensagens/${msgId}/fixar`, {
+      method: 'PUT'
+    });
+    if (!res.ok) throw new Error('Erro ao alterar fixação da mensagem.');
+    renderChatInternoCliente(document.getElementById('container-modo-visualizacao'), clienteId);
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function excluirMensagemCliente(clienteId, msgId) {
+  const confirmar = confirm('Deseja excluir esta mensagem interna?');
+  if (!confirmar) return;
+
+  try {
+    const res = await fetch(`/api/clientes/${clienteId}/mensagens/${msgId}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Erro ao excluir mensagem.');
+    mostrarToast('Mensagem excluída com sucesso.', 'sucesso');
+    renderChatInternoCliente(document.getElementById('container-modo-visualizacao'), clienteId);
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// -------------------------------------------------------------
+// MURAL GERAL DE AVISOS E COMUNICADOS DO ESCRITÓRIO
+// -------------------------------------------------------------
+
+async function renderMuralEquipe(container) {
+  container.innerHTML = `<div class="flex items-center justify-center p-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div></div>`;
+
+  try {
+    const res = await fetch('/api/mural-avisos');
+    if (!res.ok) throw new Error('Falha ao carregar mural de avisos.');
+    const avisos = await res.json();
+    window._avisosMuralAtivos = avisos;
+
+    const usuarioLogado = estado.usuarioLogado || { id: null, nome: 'Colaborador', perfil: 'TECNICO' };
+
+    container.innerHTML = `
+      <div class="space-y-5">
+        <!-- HEADER DO MURAL -->
+        <div class="bg-gradient-to-r from-[#0A213D] to-[#1E3A5F] rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center space-x-3.5">
+            <span class="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-xl flex-shrink-0">
+              📢
+            </span>
+            <div>
+              <h2 class="text-lg font-black tracking-tight">Mural Geral de Recados do Escritório</h2>
+              <p class="text-xs text-slate-200 mt-0.5">Comunicados da diretoria, alertas de sistemas e alinhamentos de toda a equipe</p>
+            </div>
+          </div>
+          <button onclick="abrirModalNovoAvisoMural()" class="px-4 py-2.5 bg-[#C5A059] hover:bg-[#b08e4d] text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center space-x-2 self-start sm:self-auto active:scale-95">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>+ Publicar Novo Comunicado</span>
+          </button>
+        </div>
+
+        <!-- GRADE DE COMUNICADOS -->
+        ${avisos.length === 0 ? `
+          <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
+            <p class="font-bold text-sm text-slate-700">Nenhum comunicado ativo no momento.</p>
+            <p class="text-xs">Clique no botão acima para publicar o primeiro comunicado do escritório.</p>
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${avisos.map(a => {
+              const ehMeu = a.colaborador_id === usuarioLogado.id;
+              const podeExcluir = ehMeu || usuarioLogado.perfil === 'GESTOR' || usuarioLogado.perfil === 'ONBOARDING';
+              const dt = new Date(a.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+              const tipoConfig = {
+                'URGENTE': { label: 'URGENTE', cor: 'bg-rose-100 text-rose-800 border-rose-300', icone: 'alert-triangle' },
+                'AVISO': { label: 'AVISO IMPORTANTE', cor: 'bg-amber-100 text-amber-900 border-amber-300', icone: 'alert-circle' },
+                'SISTEMA': { label: 'SISTEMAS / INSTABILIDADE', cor: 'bg-purple-100 text-purple-800 border-purple-300', icone: 'server' },
+                'INFO': { label: 'INFORMATIVO', cor: 'bg-sky-100 text-sky-800 border-sky-300', icone: 'info' }
+              }[a.tipo || 'INFO'];
+
+              return `
+                <div class="bg-white rounded-2xl border ${a.fixado ? 'border-amber-400 ring-2 ring-amber-100 shadow-md' : 'border-slate-200 hover:border-slate-300 shadow-sm'} p-5 flex flex-col justify-between space-y-3 transition">
+                  <div class="space-y-2.5">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${tipoConfig.cor} flex items-center space-x-1">
+                        <i data-lucide="${tipoConfig.icone}" class="w-3 h-3"></i>
+                        <span>${tipoConfig.label}</span>
+                      </span>
+                      <div class="flex items-center space-x-1.5">
+                        <button onclick="alternarFixarAvisoMural('${a.id}')" class="p-1 rounded text-slate-400 hover:text-amber-600 transition" title="${a.fixado ? 'Desafixar comunicado' : 'Fixar no topo'}">
+                          <i data-lucide="pin" class="w-3.5 h-3.5 ${a.fixado ? 'text-amber-600 fill-amber-600' : ''}"></i>
+                        </button>
+                        ${podeExcluir ? `
+                          <button onclick="excluirAvisoMural('${a.id}')" class="p-1 rounded text-slate-400 hover:text-rose-600 transition" title="Excluir comunicado">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+
+                    ${a.titulo ? `<h3 class="font-bold text-slate-900 text-sm leading-snug">${a.titulo}</h3>` : ''}
+                    <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">${a.mensagem}</p>
+                  </div>
+
+                  <!-- AUTOR & TIMESTAMP -->
+                  <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                    <div class="flex items-center space-x-2">
+                      <div class="w-6 h-6 rounded-full text-white font-bold flex items-center justify-center text-[10px]" style="background-color: ${a.colaborador_cor || '#0A213D'}">
+                        ${a.colaborador_nome.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                      </div>
+                      <div>
+                        <span class="font-bold text-slate-800">${a.colaborador_nome}</span>
+                        <span class="text-slate-400 block text-[9px]">${a.colaborador_departamento || 'Geral'}</span>
+                      </div>
+                    </div>
+                    <span>${dt}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+    `;
+
+    lucide.createIcons();
+  } catch (err) {
+    container.innerHTML = `<div class="p-6 bg-rose-50 text-rose-700 rounded-xl font-bold">Erro: ${err.message}</div>`;
+  }
+}
+
+async function abrirModalNovoAvisoMural() {
+  const titulo = prompt('Título do comunicado (opcional):');
+  if (titulo === null) return;
+
+  const mensagem = prompt('Mensagem do comunicado:');
+  if (!mensagem || !mensagem.trim()) return;
+
+  const tipoPrompt = prompt('Categoria do aviso:\n1 - Informativo\n2 - Urgente\n3 - Aviso Importante\n4 - Sistemas / Instabilidade', '1');
+  const tiposMap = { '1': 'INFO', '2': 'URGENTE', '3': 'AVISO', '4': 'SISTEMA' };
+  const tipo = tiposMap[tipoPrompt] || 'INFO';
+
+  const fixar = confirm('Deseja fixar este comunicado com destaque no topo do mural?');
+
+  try {
+    const res = await fetch('/api/mural-avisos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titulo: titulo ? titulo.trim() : null,
+        mensagem: mensagem.trim(),
+        tipo,
+        fixado: fixar ? 1 : 0
+      })
+    });
+    if (!res.ok) throw new Error('Erro ao publicar comunicado.');
+    mostrarToast('Comunicado publicado com sucesso no mural da equipe!', 'sucesso');
+    renderMuralEquipe(document.getElementById('view-container'));
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function alternarFixarAvisoMural(id) {
+  try {
+    const res = await fetch(`/api/mural-avisos/${id}/fixar`, {
+      method: 'PUT'
+    });
+    if (!res.ok) throw new Error('Erro ao alterar fixação.');
+    renderMuralEquipe(document.getElementById('view-container'));
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function excluirAvisoMural(id) {
+  const confirmar = confirm('Tem certeza que deseja remover este comunicado do mural da equipe?');
+  if (!confirmar) return;
+
+  try {
+    const res = await fetch(`/api/mural-avisos/${id}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Erro ao excluir comunicado.');
+    mostrarToast('Comunicado removido do mural.', 'sucesso');
+    renderMuralEquipe(document.getElementById('view-container'));
   } catch (err) {
     alert(err.message);
   }

@@ -319,7 +319,57 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_by TEXT
   );
+
+  -- Chat e Mensagens Internas Contextuais por Empresa
+  CREATE TABLE IF NOT EXISTS mensagens_internas_cliente (
+    id TEXT PRIMARY KEY,
+    cliente_id TEXT NOT NULL,
+    colaborador_id TEXT,
+    colaborador_nome TEXT NOT NULL,
+    colaborador_departamento TEXT,
+    colaborador_cor TEXT DEFAULT '#0A213D',
+    mensagem TEXT NOT NULL,
+    mencao_departamento TEXT,
+    fixado INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+  );
+
+  -- Mural Geral de Avisos e Comunicados do Escritório
+  CREATE TABLE IF NOT EXISTS mural_avisos_equipe (
+    id TEXT PRIMARY KEY,
+    colaborador_id TEXT,
+    colaborador_nome TEXT NOT NULL,
+    colaborador_departamento TEXT,
+    colaborador_cor TEXT DEFAULT '#0A213D',
+    titulo TEXT,
+    mensagem TEXT NOT NULL,
+    tipo TEXT DEFAULT 'INFO',
+    fixado INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+
+// Mensagem de boas-vindas inicial no mural se estiver vazio
+try {
+  const countAvisos = db.prepare('SELECT COUNT(*) as count FROM mural_avisos_equipe').get().count;
+  if (countAvisos === 0) {
+    db.prepare(`
+      INSERT INTO mural_avisos_equipe (id, colaborador_id, colaborador_nome, colaborador_departamento, colaborador_cor, titulo, mensagem, tipo, fixado)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      'aviso_bemvindo',
+      'colab_0',
+      'Raphael José',
+      'DIRETORIA',
+      '#0A213D',
+      'Bem-vindos ao Mural de Comunicação Interna da Equipe!',
+      'Este espaço foi criado para centralizarmos os avisos do escritório, prazos de guias fiscais, atualizações de sistemas da Receita/Junta e alinhamentos gerais entre todos os departamentos.',
+      'AVISO',
+      1
+    );
+  }
+} catch (eMural) {}
 
 // Inicializar configs padrão
 const configQuery = db.prepare('SELECT valor FROM configuracoes WHERE chave = ?');
