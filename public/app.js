@@ -2231,13 +2231,22 @@ async function renderTodosClientes(container) {
         <div id="grid-clientes-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           ${clientes.map(c => {
             const pct = c.total_tarefas > 0 ? Math.round((c.tarefas_concluidas / c.total_tarefas) * 100) : 0;
+            const formRespondido = c.formulario_respondido === 1 || c.data_formulario_respondido || c.data_envio_cliente;
             return `
-              <div onclick="verDetalhesCliente('${c.id}')" class="cliente-item-card bg-white p-4 rounded-xl border border-slate-200 hover:border-sky-500 shadow-sm hover:shadow-md cursor-pointer transition space-y-3" data-nome="${c.razao_social.toLowerCase()}" data-tipo="${c.tipo_empresa}">
+              <div onclick="verDetalhesCliente('${c.id}')" class="cliente-item-card bg-white p-4 rounded-xl border ${formRespondido ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-slate-200 hover:border-sky-500'} shadow-sm hover:shadow-md cursor-pointer transition space-y-3" data-nome="${c.razao_social.toLowerCase()}" data-tipo="${c.tipo_empresa}">
                 <div class="flex items-start justify-between">
                   <div>
-                    <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded ${c.tipo_empresa === 'EM_CONSTITUICAO' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}">
-                      ${c.tipo_empresa === 'EM_CONSTITUICAO' ? 'Em Constituição' : 'Constituída'}
-                    </span>
+                    <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                      <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded ${c.tipo_empresa === 'EM_CONSTITUICAO' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}">
+                        ${c.tipo_empresa === 'EM_CONSTITUICAO' ? 'Em Constituição' : 'Constituída'}
+                      </span>
+                      ${formRespondido ? `
+                        <span class="inline-flex items-center space-x-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                          <i data-lucide="check-check" class="w-3 h-3 text-emerald-600"></i>
+                          <span>Formulário Respondido</span>
+                        </span>
+                      ` : ''}
+                    </div>
                     <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-1">${c.razao_social}</h4>
                     <p class="text-[11px] text-slate-500">${c.regime_tributario} • Cód. Domínio: <strong>${c.codigo_dominio || 'S/ Cód'}</strong></p>
                   </div>
@@ -2329,12 +2338,21 @@ async function renderPipelineKanbanEtapas(container) {
                     <div class="h-20 flex items-center justify-center text-slate-400 text-[11px] border-2 border-dashed border-slate-300 rounded-lg">
                       Nenhum cliente
                     </div>
-                  ` : clientesEtapa.map(c => `
-                    <div onclick="verDetalhesCliente('${c.id}')" class="bg-white p-3 rounded-lg border border-slate-200 hover:border-sky-500 shadow-sm hover:shadow cursor-pointer transition space-y-2">
+                  ` : clientesEtapa.map(c => {
+                    const formRespondido = c.formulario_respondido === 1 || c.data_formulario_respondido || c.data_envio_cliente;
+                    return `
+                    <div onclick="verDetalhesCliente('${c.id}')" class="bg-white p-3 rounded-lg border ${formRespondido ? 'border-emerald-400 ring-1 ring-emerald-100' : 'border-slate-200 hover:border-sky-500'} shadow-sm hover:shadow cursor-pointer transition space-y-2">
                       <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.tipo_empresa === 'EM_CONSTITUICAO' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}">
-                          ${c.tipo_empresa === 'EM_CONSTITUICAO' ? 'Abertura' : 'Constituída'}
-                        </span>
+                        <div class="flex items-center space-x-1">
+                          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.tipo_empresa === 'EM_CONSTITUICAO' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}">
+                            ${c.tipo_empresa === 'EM_CONSTITUICAO' ? 'Abertura' : 'Constituída'}
+                          </span>
+                          ${formRespondido ? `
+                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300" title="Formulário respondido pelo cliente">
+                              📥 Respondido
+                            </span>
+                          ` : ''}
+                        </div>
                         <span class="text-[10px] font-mono text-slate-500">${c.codigo_dominio || ''}</span>
                       </div>
                       <h5 class="font-bold text-xs text-slate-900 line-clamp-1">${c.razao_social}</h5>
@@ -2345,7 +2363,8 @@ async function renderPipelineKanbanEtapas(container) {
                         </span>
                       </div>
                     </div>
-                  `).join('')}
+                  `;
+                  }).join('')}
                 </div>
               </div>
             `;
@@ -2821,15 +2840,38 @@ async function renderClienteDetalhes(container, clienteId) {
       <div class="space-y-4">
         <!-- HEADER DO CLIENTE & BOTÕES PRINCIPAIS -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+          ${(cliente.formulario_respondido === 1 || cliente.data_formulario_respondido || dados.ficha?.data_envio_cliente) ? `
+          <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-300 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950 shadow-xs">
+            <div class="flex items-center space-x-3">
+              <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs flex-shrink-0">
+                <i data-lucide="inbox" class="w-4 h-4"></i>
+              </span>
+              <div>
+                <p class="font-bold text-emerald-900">📥 Notificação: O cliente já respondeu e enviou os dados pelo formulário externo!</p>
+                <p class="text-[11px] text-emerald-700">As informações societárias, qualificação dos sócios e documentos anexados já estão consolidados na Ficha Societária.</p>
+              </div>
+            </div>
+            <button onclick="abrirModalFichaAbertura('${cliente.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition text-xs shadow-2xs whitespace-nowrap self-start sm:self-auto">
+              Visualizar Ficha Preenchida
+            </button>
+          </div>
+          ` : ''}
+
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <div class="flex items-center space-x-3">
+              <div class="flex items-center space-x-3 flex-wrap gap-y-1">
                 <button onclick="navegarPara('clientes')" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg transition" title="Voltar para a Lista de Clientes"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
                 <h2 class="text-lg font-bold text-slate-900">${cliente.razao_social}</h2>
                 <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full ${cliente.tipo_empresa === 'EM_CONSTITUICAO' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}">
                   ${cliente.tipo_empresa === 'EM_CONSTITUICAO' ? 'Em Constituição' : 'Constituída'}
                 </span>
                 ${cliente.status_geral === 'CONCLUIDO' ? `<span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">✓ Onboarding Concluído</span>` : ''}
+                ${(cliente.formulario_respondido === 1 || cliente.data_formulario_respondido || dados.ficha?.data_envio_cliente) ? `
+                  <span class="inline-flex items-center space-x-1 text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                    <i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span>Formulário Respondido</span>
+                  </span>
+                ` : ''}
               </div>
 
               <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-2 pl-8">
@@ -4416,6 +4458,74 @@ estado.documentosAtivos = [];
 estado.cnaePrincipalAtivo = null;
 estado.cnaesSecundariosAtivos = [];
 
+// =========================================================================
+// MÁSCARAS E FORMATAÇÃO DE DADOS (MOEDA BRL R$, CPF, TELEFONE)
+// =========================================================================
+
+function formatarMoedaBRL(input) {
+  if (!input) return;
+  let valor = String(input.value || '').replace(/\D/g, '');
+  if (!valor) {
+    input.value = '';
+    return;
+  }
+  const numero = parseFloat(valor) / 100;
+  input.value = numero.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function desformatarMoedaBRL(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  const str = String(val).replace(/[^0-9,-]/g, '').replace(',', '.');
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : num;
+}
+
+function formatarValorExibicaoBRL(val) {
+  const num = desformatarMoedaBRL(val);
+  return num.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function formatarCpfInput(input) {
+  if (!input) return;
+  let v = input.value.replace(/\D/g, '');
+  if (v.length > 11) v = v.substring(0, 11);
+  if (v.length > 9) {
+    input.value = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  } else if (v.length > 6) {
+    input.value = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+  } else if (v.length > 3) {
+    input.value = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+  } else {
+    input.value = v;
+  }
+}
+
+function formatarTelefoneInput(input) {
+  if (!input) return;
+  let v = input.value.replace(/\D/g, '');
+  if (v.length > 11) v = v.substring(0, 11);
+  if (v.length > 10) {
+    input.value = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  } else if (v.length > 6) {
+    input.value = v.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+  } else if (v.length > 2) {
+    input.value = v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+  } else {
+    input.value = v;
+  }
+}
+
 // Formatação e busca automática instantânea de CEP (sem precisar clicar)
 async function formatarEAutobuscarCep(input, tipo, socioId = null) {
   let v = input.value.replace(/\D/g, '');
@@ -4659,14 +4769,15 @@ async function abrirModalFichaAbertura(clienteId) {
     // Se o cliente já enviou dados via WhatsApp/link externo
     const cardEnvio = document.getElementById('card-dados-cliente-envio');
     if (cardEnvio) {
-      if (f.data_envio_cliente) {
+      if (f.data_envio_cliente || f.data_formulario_respondido || f.formulario_respondido) {
         cardEnvio.classList.remove('hidden');
-        const dt = new Date(f.data_envio_cliente).toLocaleString('pt-BR');
+        const dataOrigem = f.data_envio_cliente || f.data_formulario_respondido;
+        const dt = dataOrigem ? new Date(dataOrigem).toLocaleString('pt-BR') : 'Data confirmada';
         document.getElementById('txt-data-envio-cliente').textContent = `Informações Enviadas pelo Cliente via Link em ${dt}`;
         document.getElementById('txt-atividades-cliente').textContent = f.atividades_descricao || '—';
         document.getElementById('txt-quotas-cliente').textContent = f.divisao_quotas || '100% Sócio Administrador';
         document.getElementById('txt-obs-cliente').textContent = f.observacoes_cliente || 'Nenhuma observação informada.';
-        document.getElementById('txt-fat-cliente').textContent = `R$ ${Number(f.faturamento_estimado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+        document.getElementById('txt-fat-cliente').textContent = formatarValorExibicaoBRL(f.faturamento_estimado);
         document.getElementById('txt-func-cliente').textContent = f.qtd_funcionarios_inicial || '0';
         document.getElementById('txt-senha-gov-cliente').textContent = f.senha_gov ? f.senha_gov : 'Não informada';
 
@@ -4695,7 +4806,7 @@ async function abrirModalFichaAbertura(clienteId) {
     setVal('abr-razao-op3', f.razao_social_op3);
     setVal('abr-nome-fantasia', f.nome_fantasia || cliente.nome_fantasia);
     setVal('abr-natureza-juridica', f.natureza_juridica || 'LTDA');
-    setVal('abr-capital-social', f.capital_social || '10000.00');
+    setVal('abr-capital-social', formatarValorExibicaoBRL(f.capital_social || 10000));
     setVal('abr-divisao-quotas', f.divisao_quotas || '10.000 quotas a R$ 1,00');
     setVal('abr-atividades-desc', f.atividades_descricao);
     setVal('abr-cnaes-sugeridos', f.cnaes_sugeridos);
@@ -4824,7 +4935,7 @@ function renderListaSociosAbertura() {
 
   const socios = estado.sociosAtivos;
   const totalQuotas = socios.reduce((acc, s) => acc + (parseFloat(s.percentual_quotas) || 0), 0);
-  const capitalSocial = parseFloat(document.getElementById('abr-capital-social')?.value) || 0;
+  const capitalSocial = desformatarMoedaBRL(document.getElementById('abr-capital-social')?.value);
 
   const badgeQuotas = document.getElementById('badge-total-quotas');
   if (badgeQuotas) {
@@ -4973,7 +5084,7 @@ function renderListaSociosAbertura() {
 }
 
 function recalcularValorQuotasSocio(socioId) {
-  const capital = parseFloat(document.getElementById('abr-capital-social')?.value) || 0;
+  const capital = desformatarMoedaBRL(document.getElementById('abr-capital-social')?.value);
   const pct = parseFloat(document.getElementById(`soc-quotas-${socioId}`)?.value) || 0;
   const valEl = document.getElementById(`soc-valor-${socioId}`);
   if (valEl && capital > 0) {
@@ -5306,7 +5417,7 @@ async function salvarFichaAberturaCompleta() {
       razao_social_op3: getVal('abr-razao-op3'),
       nome_fantasia: getVal('abr-nome-fantasia'),
       natureza_juridica: getVal('abr-natureza-juridica'),
-      capital_social: parseFloat(getVal('abr-capital-social')) || 0,
+      capital_social: desformatarMoedaBRL(getVal('abr-capital-social')),
       divisao_quotas: getVal('abr-divisao-quotas'),
       atividades_descricao: getVal('abr-atividades-desc'),
       cnaes_sugeridos: getVal('abr-cnaes-sugeridos'),
@@ -5627,7 +5738,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
                   </div>
                   <div>
                     <label class="block font-bold text-slate-900 mb-1">Capital Social Inicial (em R$): *</label>
-                    <input type="number" step="0.01" name="capital_social" required placeholder="10000.00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900">
+                    <input type="text" inputmode="numeric" name="capital_social" id="cli-capital-social" required placeholder="R$ 10.000,00" oninput="formatarMoedaBRL(this)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900">
                   </div>
                 </div>
 
@@ -5817,7 +5928,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block font-bold text-slate-900 mb-1">Faturamento Mensal Estimado (em R$): *</label>
-                    <input type="number" step="0.01" name="faturamento_estimado" required placeholder="Ex: 20000.00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-emerald-800">
+                    <input type="text" inputmode="numeric" name="faturamento_estimado" id="cli-faturamento-estimado" required placeholder="R$ 20.000,00" oninput="formatarMoedaBRL(this)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-emerald-800">
                   </div>
                   <div>
                     <label class="block font-bold text-slate-900 mb-1">Número Inicial de Funcionários: *</label>
@@ -5921,7 +6032,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
     form.razao_social_op2.value = f.razao_social_op2 || '';
     form.razao_social_op3.value = f.razao_social_op3 || '';
     form.nome_fantasia.value = f.nome_fantasia || '';
-    form.capital_social.value = f.capital_social || '10000.00';
+    form.capital_social.value = formatarValorExibicaoBRL(f.capital_social || 10000);
     if (form.divisao_quotas) form.divisao_quotas.value = f.divisao_quotas || '100% Sócio Administrador';
     form.atividades_descricao.value = f.atividades_descricao || '';
     form.tipo_imovel.value = f.tipo_imovel || 'PROPRIO';
@@ -5953,7 +6064,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
 
     form.senha_gov.value = f.senha_gov || '';
     form.observacoes_cliente.value = f.observacoes_cliente || '';
-    if (f.faturamento_estimado) form.faturamento_estimado.value = f.faturamento_estimado;
+    if (f.faturamento_estimado) form.faturamento_estimado.value = formatarValorExibicaoBRL(f.faturamento_estimado);
     if (f.qtd_funcionarios_inicial) form.qtd_funcionarios_inicial.value = f.qtd_funcionarios_inicial;
 
     sociosClienteForm = (data.socios && data.socios.length > 0) ? data.socios : [
@@ -6031,7 +6142,7 @@ function renderSociosFormularioCliente() {
           <label class="block font-bold text-slate-900 mb-1">
             ${idx === 0 ? 'CPF do Sócio Administrador *' : `CPF do Sócio 0${idx + 1}: *`}
           </label>
-          <input type="text" id="cli-soc-cpf-${idx}" value="${s.cpf || ''}" required placeholder="000.000.000-00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono">
+          <input type="text" id="cli-soc-cpf-${idx}" value="${s.cpf || ''}" required placeholder="000.000.000-00" oninput="formatarCpfInput(this)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono">
         </div>
       </div>
 
@@ -6080,7 +6191,7 @@ function renderSociosFormularioCliente() {
           <label class="block font-bold text-slate-900 mb-1">
             Telefone / WhatsApp *
           </label>
-          <input type="text" id="cli-soc-tel-${idx}" value="${s.telefone || ''}" required placeholder="(11) 90000-0000" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+          <input type="text" id="cli-soc-tel-${idx}" value="${s.telefone || ''}" required placeholder="(11) 90000-0000" oninput="formatarTelefoneInput(this)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
         </div>
       </div>
 
@@ -6307,7 +6418,7 @@ async function enviarColetaCompletaCliente(event, token) {
     razao_social_op3: formData.get('razao_social_op3'),
     nome_fantasia: formData.get('nome_fantasia'),
     natureza_juridica: formData.get('natureza_juridica'),
-    capital_social: parseFloat(formData.get('capital_social')) || 0,
+    capital_social: desformatarMoedaBRL(formData.get('capital_social')),
     divisao_quotas: formData.get('divisao_quotas'),
     atividades_descricao: formData.get('atividades_descricao'),
     cep_empresa: formData.get('cep_empresa'),
@@ -6328,7 +6439,7 @@ async function enviarColetaCompletaCliente(event, token) {
     resp_tecnico_conselho: formData.get('resp_tecnico_conselho'),
     resp_tecnico_numero: formData.get('resp_tecnico_numero'),
     resp_tecnico_estado: formData.get('resp_tecnico_estado'),
-    faturamento_estimado: parseFloat(formData.get('faturamento_estimado')) || 0,
+    faturamento_estimado: desformatarMoedaBRL(formData.get('faturamento_estimado')),
     qtd_funcionarios_inicial: parseInt(formData.get('qtd_funcionarios_inicial')) || 0,
     possui_certificado: formData.get('possui_certificado') === '1',
     senha_gov: formData.get('senha_gov'),

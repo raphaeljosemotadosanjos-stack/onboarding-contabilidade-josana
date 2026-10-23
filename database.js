@@ -296,6 +296,8 @@ safeAdd('ficha_abertura', 'data_envio_cliente', 'DATETIME');
 safeAdd('ficha_abertura', 'resp_tecnico_numero', 'TEXT');
 safeAdd('ficha_abertura', 'resp_tecnico_estado', 'TEXT');
 safeAdd('ficha_abertura', 'declaracao_veracidade', 'INTEGER DEFAULT 1');
+safeAdd('clientes', 'formulario_respondido', 'INTEGER DEFAULT 0');
+safeAdd('clientes', 'data_formulario_respondido', 'DATETIME');
 safeAdd('socios_abertura', 'ponto_referencia', 'TEXT');
 
 // Inicializar configs padrão

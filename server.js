@@ -165,6 +165,16 @@ async function enviarEmailDefinicaoSenha({ email, nome, token, req }) {
 }
 
 // ==========================================
+
+// Helper para interpretar valores monetários em BRL (ex: "R$ 10.000,00" ou 10000.00)
+function parseValorMoeda(val) {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'number') return val;
+  const limpo = String(val).replace(/[^0-9,-]/g, '').replace(',', '.');
+  const num = parseFloat(limpo);
+  return isNaN(num) ? null : num;
+}
+
 // 1. RBAC & AUTENTICAÇÃO DE COLABORADORES
 // ==========================================
 function getColaboradorAutenticado(req) {
@@ -1321,6 +1331,7 @@ app.get('/api/clientes', (req, res) => {
     let sql = `
       SELECT 
         c.*,
+        (SELECT f.data_envio_cliente FROM ficha_abertura f WHERE f.cliente_id = c.id) as data_envio_cliente,
         (SELECT COUNT(*) FROM tarefas_checklist t WHERE t.cliente_id = c.id) as total_tarefas,
         (SELECT COUNT(*) FROM tarefas_checklist t WHERE t.cliente_id = c.id AND t.status IN ('CONCLUIDO', 'NAO_APLICAVEL')) as tarefas_concluidas,
         (SELECT COUNT(*) FROM pendencias p WHERE p.cliente_id = c.id AND p.status = 'ABERTA') as pendencias_abertas,
@@ -1518,6 +1529,7 @@ app.get('/api/clientes/:id', (req, res) => {
     const competencias = db.prepare('SELECT * FROM acompanhamento_competencias WHERE cliente_id = ? ORDER BY competencia_numero ASC').all(id);
     const relatoriosIA = db.prepare('SELECT * FROM relatorios_semanais_ia WHERE cliente_id = ? ORDER BY data_geracao DESC').all(id);
     const historico = db.prepare('SELECT * FROM historico_atividades WHERE cliente_id = ? ORDER BY created_at DESC LIMIT 20').all(id);
+    const ficha = db.prepare('SELECT * FROM ficha_abertura WHERE cliente_id = ?').get(id);
 
     res.json({
       cliente,
@@ -1527,7 +1539,8 @@ app.get('/api/clientes/:id', (req, res) => {
       validacoes,
       competencias,
       relatoriosIA,
-      historico
+      historico,
+      ficha
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2228,7 +2241,11 @@ app.put('/api/clientes/:id/ficha-abertura', (req, res) => {
     camposPermitidos.forEach(c => {
       if (body[c] !== undefined) {
         updates.push(`${c} = ?`);
-        values.push(body[c]);
+        if (c === 'capital_social' || c === 'faturamento_estimado') {
+          values.push(parseValorMoeda(body[c]));
+        } else {
+          values.push(body[c]);
+        }
       }
     });
 
@@ -2624,6 +2641,9 @@ app.post('/api/coleta-externa/:token', (req, res) => {
     const b = req.body;
     const toNull = v => (v === undefined ? null : v);
 
+    const capitalSocialParsed = parseValorMoeda(b.capital_social) ?? ficha.capital_social;
+    const faturamentoParsed = parseValorMoeda(b.faturamento_estimado) ?? ficha.faturamento_estimado;
+
     db.prepare(`
       UPDATE ficha_abertura SET
         razao_social_op1 = COALESCE(?, razao_social_op1),
@@ -2663,19 +2683,28 @@ app.post('/api/coleta-externa/:token', (req, res) => {
       WHERE id = ?
     `).run(
       toNull(b.razao_social_op1), toNull(b.razao_social_op2), toNull(b.razao_social_op3), toNull(b.nome_fantasia),
-      toNull(b.natureza_juridica), toNull(b.capital_social), toNull(b.divisao_quotas), toNull(b.atividades_descricao),
+      toNull(b.natureza_juridica), toNull(capitalSocialParsed), toNull(b.divisao_quotas), toNull(b.atividades_descricao),
       toNull(b.cep_empresa), toNull(b.rua_empresa), toNull(b.numero_empresa), toNull(b.complemento_empresa),
       toNull(b.ponto_referencia_empresa), toNull(b.bairro_empresa), toNull(b.cidade_empresa), toNull(b.estado_empresa),
       toNull(b.tipo_imovel), toNull(b.inscricao_iptu), toNull(b.proprietario_nome), toNull(b.proprietario_doc),
       b.possui_resp_tecnico !== undefined ? (b.possui_resp_tecnico ? 1 : 0) : null,
       toNull(b.resp_tecnico_nome), toNull(b.resp_tecnico_cpf), toNull(b.resp_tecnico_conselho),
       toNull(b.resp_tecnico_numero), toNull(b.resp_tecnico_estado),
-      toNull(b.faturamento_estimado), toNull(b.qtd_funcionarios_inicial),
+      toNull(faturamentoParsed), toNull(b.qtd_funcionarios_inicial),
       b.possui_certificado !== undefined ? (b.possui_certificado ? 1 : 0) : null,
       toNull(b.senha_gov), toNull(b.observacoes_cliente),
       b.declaracao_veracidade !== undefined ? (b.declaracao_veracidade ? 1 : 0) : 1,
       ficha.id
     );
+
+    // Marcar cliente como formulário respondido
+    db.prepare(`
+      UPDATE clientes SET 
+        formulario_respondido = 1,
+        data_formulario_respondido = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(ficha.cliente_id);
 
     // Mapeamento dos IDs de sócios para vincular aos documentos
     const socioIdsByIndex = {};
@@ -2772,6 +2801,68 @@ app.post('/api/coleta-externa/:token', (req, res) => {
       'ENVIO_DADOS_ABERTURA',
       `Cliente enviou dados completos da abertura societária e ${totalAnexos} documento(s) anexado(s).`
     );
+
+    // Notificação por E-mail para a Diretoria / Gestor Geral
+    try {
+      const emailGestor = 'raphaeljosemotadosanjos@gmail.com';
+      const transporter = getMailTransporter();
+      const nomeEmpresa = b.razao_social_op1 || b.nome_fantasia || 'Nova Empresa em Abertura';
+      const primeiroSocio = (Array.isArray(b.socios) && b.socios[0]?.nome_completo) ? b.socios[0].nome_completo : 'Cliente';
+      const host = req ? req.get('host') : 'onboarding-contabilidade-josana.onrender.com';
+      const protocol = req ? (req.headers['x-forwarded-proto'] || req.protocol || 'https') : 'https';
+      const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+      const linkDashboard = `${baseUrl}/#clientes`;
+
+      const valorCapitalFmt = (capitalSocialParsed || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const valorFaturamentoFmt = (faturamentoParsed || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      if (transporter) {
+        transporter.sendMail({
+          from: `"Josana Mota Onboarding" <${process.env.SMTP_USER || 'contabilidadejosanamota@gmail.com'}>`,
+          to: emailGestor,
+          subject: `📥 Formulário Respondido: ${nomeEmpresa} enviou os dados societários!`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f7f7f5; padding: 24px; color: #2f3437;">
+              <div style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #ededeb; overflow: hidden; box-shadow: 0 4px 20px rgba(10,33,61,0.06);">
+                <div style="background-color: #0A213D; padding: 24px; text-align: center;">
+                  <div style="color: #ffffff; font-size: 16px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">Josana Mota</div>
+                  <div style="color: #C5A059; font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-top: 4px;">Contabilidade</div>
+                </div>
+                <div style="padding: 28px;">
+                  <div style="display: inline-block; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 9999px; margin-bottom: 12px;">
+                    ✓ Formulário de Abertura Recebido
+                  </div>
+                  <h1 style="font-size: 18px; font-weight: 800; color: #0A213D; margin: 0 0 10px 0;">O cliente respondeu ao formulário!</h1>
+                  <p style="font-size: 13px; color: #4a4a48; margin: 0 0 20px 0; line-height: 1.5;">
+                    O cliente <strong>${primeiroSocio}</strong> concluiu o preenchimento da ficha e enviou <strong>${totalAnexos} documento(s) anexado(s)</strong>.
+                  </p>
+                  
+                  <div style="background: #fafaf9; border: 1px solid #ededeb; border-radius: 12px; padding: 16px; font-size: 12px; margin-bottom: 24px;">
+                    <p style="margin: 0 0 8px 0;"><strong>Razão Social (1ª Opção):</strong> ${b.razao_social_op1 || 'Não informada'}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Nome Fantasia:</strong> ${b.nome_fantasia || 'Não informado'}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Capital Social:</strong> ${valorCapitalFmt}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Faturamento Mensal Estimado:</strong> ${valorFaturamentoFmt}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Local:</strong> ${b.cidade_empresa || '—'} / ${b.estado_empresa || '—'}</p>
+                    <p style="margin: 0;"><strong>Documentos Anexados:</strong> ${totalAnexos} arquivo(s)</p>
+                  </div>
+
+                  <div style="text-align: center; margin: 24px 0 10px 0;">
+                    <a href="${linkDashboard}" style="background-color: #0A213D; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 13px; padding: 12px 24px; border-radius: 10px; display: inline-block;">
+                      Abrir Ficha no Sistema →
+                    </a>
+                  </div>
+                </div>
+                <div style="border-top: 1px solid #ededeb; padding: 14px; text-align: center; font-size: 11px; color: #9b9a97; background: #fafaf9;">
+                  Notificação Automática do Sistema de Onboarding • Josana Mota Contabilidade
+                </div>
+              </div>
+            </div>
+          `
+        }).catch(e => console.warn('Falha envio email notificacao:', e.message));
+      }
+    } catch (eMail) {
+      console.warn('Erro ao processar notificacao email:', eMail.message);
+    }
 
     res.json({ success: true, message: 'Dados e documentos recebidos com sucesso pelo escritório!' });
   } catch (err) {
