@@ -1,3 +1,23 @@
+
+// =========================================================================
+// CONTROLE DE NAVEGAÇÃO MOBILE (SMARTPHONES)
+// =========================================================================
+function abrirSidebarMobile() {
+  const sidebar = document.getElementById('sidebar-principal');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar) sidebar.classList.remove('-translate-x-full');
+  if (backdrop) backdrop.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden', 'md:overflow-auto');
+}
+
+function fecharSidebarMobile() {
+  const sidebar = document.getElementById('sidebar-principal');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar) sidebar.classList.add('-translate-x-full');
+  if (backdrop) backdrop.classList.add('hidden');
+  document.body.classList.remove('overflow-hidden', 'md:overflow-auto');
+}
+
 // =========================================================================
 // SISTEMA INTERNO DE ONBOARDING CONTÁBIL — CLIENT ENGINE V3
 // =========================================================================
@@ -1023,6 +1043,14 @@ async function atualizarContadoresSidebar() {
     const pendencias = await res.json();
     const badge = document.getElementById('badge-total-pendencias');
     if (badge) badge.textContent = pendencias.length;
+    const mobBadge = document.getElementById('mob-badge-pendencias');
+    if (mobBadge) {
+      if (pendencias.length > 0) {
+        mobBadge.classList.remove('hidden');
+      } else {
+        mobBadge.classList.add('hidden');
+      }
+    }
   } catch (e) {}
 }
 
@@ -1030,6 +1058,7 @@ async function atualizarContadoresSidebar() {
 // ROTEAMENTO DE VISUALIZAÇÕES
 // =========================================================================
 function navegarPara(tela, param = null) {
+  fecharSidebarMobile();
   // Se for técnico tentando acessar dashboard executivo ou métricas da equipe, redireciona para seu próprio painel
   if (estado.usuarioLogado?.perfil === 'TECNICO' && (tela === 'dashboard' || tela === 'equipe-metricas')) {
     tela = 'meu-painel';
@@ -1047,6 +1076,33 @@ function navegarPara(tela, param = null) {
   if (ativo) {
     ativo.classList.add('bg-[#0A213D]', 'text-white', 'shadow-xs', 'font-semibold');
     ativo.classList.remove('text-[#606770]', 'font-medium', 'text-slate-400');
+  }
+
+  // Atualizar itens da Bottom Navigation Bar no Celular
+  const mobItens = {
+    'meu-painel': 'mobnav-meu-painel',
+    'clientes': 'mobnav-clientes',
+    'cliente-detalhes': 'mobnav-clientes',
+    'kanban-colaboradores': 'mobnav-kanban',
+    'kanban-etapas': 'mobnav-kanban',
+    'pendencias': 'mobnav-pendencias'
+  };
+
+  ['mobnav-meu-painel', 'mobnav-clientes', 'mobnav-kanban', 'mobnav-pendencias'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.remove('text-[#0A213D]', 'font-extrabold');
+      el.classList.add('text-[#787774]');
+    }
+  });
+
+  const mobAtivoId = mobItens[tela];
+  if (mobAtivoId) {
+    const el = document.getElementById(mobAtivoId);
+    if (el) {
+      el.classList.remove('text-[#787774]');
+      el.classList.add('text-[#0A213D]', 'font-extrabold');
+    }
   }
 
   const container = document.getElementById('view-container');
@@ -6290,32 +6346,24 @@ async function enviarColetaCompletaCliente(event, token) {
 }
 
 // =========================================================================
-// 13. MODO NOTURNO (DARK MODE)
+// 13. IDENTIDADE VISUAL CORPORATIVA OFICIAL JOSANA MOTA (MODO DIURNO)
 // =========================================================================
 function alternarModoNoturno() {
-  const isDark = document.documentElement.classList.toggle('dark');
-  localStorage.setItem('onboarding_theme', isDark ? 'dark' : 'light');
-  atualizarIconeModoNoturno();
-  mostrarToast(isDark ? 'Modo Noturno ativado (Notion Dark)' : 'Modo Claro ativado', 'info');
+  try {
+    document.documentElement.classList.remove('dark');
+    localStorage.removeItem('onboarding_theme');
+  } catch (e) {}
 }
 
 function inicializarModoNoturno() {
-  const saved = localStorage.getItem('onboarding_theme');
-  if (saved === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
+  try {
+    localStorage.removeItem('onboarding_theme');
     document.documentElement.classList.remove('dark');
-  }
-  atualizarIconeModoNoturno();
+  } catch (e) {}
 }
 
 function atualizarIconeModoNoturno() {
-  const isDark = document.documentElement.classList.contains('dark');
-  const icone = document.getElementById('icon-dark-mode');
-  if (icone) {
-    icone.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
-    lucide.createIcons();
-  }
+  // Ícone descontinuado conforme identidade corporativa diurna oficial
 }
 
 // =========================================================================

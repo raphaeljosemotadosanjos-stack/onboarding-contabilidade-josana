@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Onboarding - Contabilidade Josana</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,10 +18,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script>
-    // Inicialização imediata do Modo Noturno (evita flash branco)
-    if (localStorage.getItem('onboarding_theme') === 'dark') {
-      document.documentElement.classList.add('dark');
-    }
+    // Garantir sempre o padrão oficial de iluminação e ergonomia corporativa Josana Mota
+    try {
+      localStorage.removeItem('onboarding_theme');
+      document.documentElement.classList.remove('dark');
+    } catch (e) {}
     tailwind.config = {
       darkMode: 'class',
       theme: {
@@ -79,11 +80,7 @@
         </div>
       </div>
 
-      <div class="flex items-center space-x-2">
-        <button onclick="alternarModoNoturno()" class="p-2 rounded-xl border border-[#EDEDEB] dark:border-[#333330] hover:bg-white dark:hover:bg-[#252525] text-[#787774] dark:text-[#9B9A97] hover:text-[#0A213D] transition shadow-2xs flex items-center justify-center cursor-pointer" title="Alternar Modo Noturno">
-          <i data-lucide="moon" class="w-4 h-4 text-[#C5A059]"></i>
-        </button>
-      </div>
+
     </header>
 
     <!-- CORPO CENTRAL: APRESENTAÇÃO INSTITUCIONAL + CARD DE LOGIN -->
@@ -204,11 +201,7 @@
         </div>
       </div>
 
-      <div class="flex items-center space-x-2">
-        <button onclick="alternarModoNoturno()" class="p-2 rounded-xl border border-[#EDEDEB] dark:border-[#333330] hover:bg-white dark:hover:bg-[#252525] text-[#787774] dark:text-[#9B9A97] hover:text-[#0A213D] transition shadow-2xs flex items-center justify-center cursor-pointer" title="Alternar Modo Noturno">
-          <i data-lucide="moon" class="w-4 h-4 text-[#C5A059]"></i>
-        </button>
-      </div>
+
     </header>
 
     <!-- CONTEÚDO CENTRAL: FORMULÁRIO DE DEFINIÇÃO DE SENHA -->
@@ -309,12 +302,20 @@
   <!-- ======================================================== -->
   <!-- 2. SISTEMA INTERNO DE GESTÃO (EXIBIDO APÓS LOGIN) -->
   <!-- ======================================================== -->
-  <div id="app-sistema" class="hidden flex flex-1 min-h-screen overflow-hidden">
+  <div id="app-sistema" class="hidden flex flex-1 min-h-screen overflow-hidden relative">
 
-    <!-- SIDEBAR ESTILO NOTION -->
-    <aside class="w-64 bg-[#F7F7F5] text-[#2F3437] flex flex-col flex-shrink-0 border-r border-[#EDEDEB] no-print">
+    <!-- BACKDROP PARA FECHAR SIDEBAR NO CELULAR -->
+    <div id="sidebar-backdrop" onclick="fecharSidebarMobile()" class="fixed inset-0 bg-[#0A213D]/50 backdrop-blur-xs z-40 hidden md:hidden transition-opacity"></div>
+
+    <!-- SIDEBAR ESTILO NOTION (RESPONSIVA: GAVETA NO CELULAR / FIXA NO DESKTOP) -->
+    <aside id="sidebar-principal" class="fixed inset-y-0 left-0 z-50 w-72 bg-[#F7F7F5] text-[#2F3437] flex flex-col flex-shrink-0 border-r border-[#EDEDEB] transform -translate-x-full md:translate-x-0 md:static transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none no-print">
+      <!-- BOTÃO DE FECHAR NO CELULAR -->
+      <button onclick="fecharSidebarMobile()" class="md:hidden p-2 rounded-xl text-[#787774] hover:text-[#0A213D] hover:bg-[#EFEFED] absolute right-3 top-3.5 cursor-pointer z-10" aria-label="Fechar menu">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
       <!-- LOGO JOSANA MOTA CONTABILIDADE (MONOGRAMA JM CENTRALIZADO COM NOME ABAIXO) -->
-      <div class="p-4 border-b border-[#EDEDEB] bg-white flex flex-col items-center text-center">
+      <div class="p-4 border-b border-[#EDEDEB] bg-white flex flex-col items-center text-center relative">
         <div class="w-14 h-12 flex items-center justify-center p-0.5 mb-1.5 logo-monograma-box rounded-lg">
           <img src="/logo-monograma.png" alt="JM Josana Mota" class="max-h-full max-w-full object-contain">
         </div>
@@ -404,26 +405,32 @@
     <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
       <!-- TOP BAR -->
-      <header class="h-14 bg-white border-b border-[#EDEDEB] px-6 flex items-center justify-between flex-shrink-0 z-30 sticky top-0 shadow-2xs no-print">
-        <div class="flex items-center space-x-3">
-          <h2 id="topbar-titulo" class="text-sm font-bold text-[#0A213D]">Dashboard & Clientes</h2>
-          <span id="topbar-subtitulo" class="text-[11px] bg-[#F7F7F5] text-[#787774] px-2.5 py-0.5 rounded-md font-medium border border-[#EDEDEB]">Visão Geral</span>
-          <a id="badge-online-tunnel" href="#" class="hidden items-center space-x-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 transition hover:bg-emerald-100 cursor-pointer shadow-2xs" title="Sistema online via Cloudflare HTTPS. Clique para copiar o link público.">
+      <header class="h-14 bg-white border-b border-[#EDEDEB] px-3 sm:px-6 flex items-center justify-between flex-shrink-0 z-30 sticky top-0 shadow-2xs no-print">
+        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <!-- BOTÃO HAMBÚRGUER MOBILE -->
+          <button id="btn-hamburger" onclick="abrirSidebarMobile()" class="p-2 -ml-1 rounded-xl text-[#0A213D] hover:bg-[#F7F7F5] border border-[#EDEDEB] md:hidden flex items-center justify-center cursor-pointer shadow-2xs" aria-label="Abrir Menu Principal">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+
+          <div class="min-w-0">
+            <div class="flex items-center space-x-2">
+              <h2 id="topbar-titulo" class="text-xs sm:text-sm font-bold text-[#0A213D] truncate max-w-[130px] sm:max-w-xs md:max-w-none">Dashboard & Clientes</h2>
+              <span id="topbar-subtitulo" class="hidden xs:inline-block text-[10px] sm:text-[11px] bg-[#F7F7F5] text-[#787774] px-2 py-0.5 rounded-md font-medium border border-[#EDEDEB] truncate max-w-[120px]">Visão Geral</span>
+            </div>
+          </div>
+          <a id="badge-online-tunnel" href="#" class="hidden items-center space-x-1 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 transition hover:bg-emerald-100 cursor-pointer shadow-2xs" title="Sistema online via Cloudflare HTTPS. Clique para copiar o link público.">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Online (HTTPS)</span>
+            <span class="hidden sm:inline">Online (HTTPS)</span>
+            <span class="sm:hidden">Online</span>
           </a>
         </div>
 
-        <div class="flex items-center space-x-2.5">
-          <!-- BOTÃO TEMA NOTURNO / CLARO -->
-          <button onclick="alternarModoNoturno()" id="btn-toggle-dark-mode" class="p-2 rounded-xl border border-[#EDEDEB] dark:border-[#333330] hover:bg-[#EFEFED] dark:hover:bg-[#2A2A2A] text-[#787774] hover:text-[#0A213D] dark:hover:text-[#F7F7F5] transition shadow-2xs flex items-center justify-center cursor-pointer" title="Alternar Modo Noturno (Escuro / Claro)">
-            <i data-lucide="moon" id="icon-dark-mode" class="w-4 h-4 text-[#C5A059]"></i>
-          </button>
-
+        <div class="flex items-center space-x-1.5 sm:space-x-2.5">
           <!-- BOTÃO NOVO ONBOARDING (RESTRITO A GESTOR/ONBOARDING) -->
-          <button id="btn-topbar-novo-onboarding" onclick="abrirModalNovoCliente()" class="inline-flex items-center space-x-1.5 bg-[#0A213D] hover:bg-[#153358] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 cursor-pointer">
+          <button id="btn-topbar-novo-onboarding" onclick="abrirModalNovoCliente()" class="inline-flex items-center space-x-1 sm:space-x-1.5 bg-[#0A213D] hover:bg-[#153358] text-white px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 cursor-pointer">
             <i data-lucide="plus" class="w-4 h-4 text-[#C5A059]"></i>
-            <span>Novo Onboarding</span>
+            <span class="hidden sm:inline">Novo Onboarding</span>
+            <span class="sm:hidden text-[11px]">Novo</span>
           </button>
 
           <!-- MENU DE PERFIL DO USUÁRIO (DROPDOWN NO CANTO SUPERIOR DIREITO) -->
@@ -506,8 +513,37 @@
         </div>
       </header>
 
-      <!-- VIEW CONTAINER -->
-      <div id="view-container" class="p-6 flex-1"></div>
+      <!-- VIEW CONTAINER (RESPONSIVO COM PADDING ADAPTADO A SMARTPHONES) -->
+      <div id="view-container" class="p-3 sm:p-6 pb-20 md:pb-6 flex-1 min-w-0 max-w-full overflow-x-hidden"></div>
+
+      <!-- BOTTOM NAVIGATION BAR PARA SMARTPHONES (MD:HIDDEN) -->
+      <nav id="mobile-bottom-bar" class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-[#EDEDEB] flex items-center justify-around z-30 shadow-lg px-1 pb-[env(safe-area-inset-bottom,0px)] no-print">
+        <button onclick="navegarPara('meu-painel')" id="mobnav-meu-painel" class="flex flex-col items-center justify-center flex-1 py-1.5 text-[#787774] hover:text-[#0A213D] active:scale-95 transition cursor-pointer">
+          <i data-lucide="sparkles" class="w-4 h-4 text-[#C5A059] mb-0.5"></i>
+          <span class="text-[10px] font-semibold">Cockpit</span>
+        </button>
+
+        <button onclick="navegarPara('clientes')" id="mobnav-clientes" class="flex flex-col items-center justify-center flex-1 py-1.5 text-[#787774] hover:text-[#0A213D] active:scale-95 transition cursor-pointer">
+          <i data-lucide="building-2" class="w-4 h-4 text-emerald-600 mb-0.5"></i>
+          <span class="text-[10px] font-semibold">Clientes</span>
+        </button>
+
+        <button onclick="navegarPara('kanban-colaboradores')" id="mobnav-kanban" class="flex flex-col items-center justify-center flex-1 py-1.5 text-[#787774] hover:text-[#0A213D] active:scale-95 transition cursor-pointer">
+          <i data-lucide="kanban" class="w-4 h-4 text-amber-600 mb-0.5"></i>
+          <span class="text-[10px] font-semibold">Kanban</span>
+        </button>
+
+        <button onclick="navegarPara('pendencias')" id="mobnav-pendencias" class="flex flex-col items-center justify-center flex-1 py-1.5 text-[#787774] hover:text-[#0A213D] active:scale-95 transition cursor-pointer relative">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500 mb-0.5"></i>
+          <span class="text-[10px] font-semibold">Pendências</span>
+          <span id="mob-badge-pendencias" class="hidden absolute top-1.5 right-3.5 w-2 h-2 rounded-full bg-rose-500"></span>
+        </button>
+
+        <button onclick="abrirSidebarMobile()" class="flex flex-col items-center justify-center flex-1 py-1.5 text-[#787774] hover:text-[#0A213D] active:scale-95 transition cursor-pointer">
+          <i data-lucide="menu" class="w-4 h-4 text-[#0A213D] mb-0.5"></i>
+          <span class="text-[10px] font-semibold">Mais</span>
+        </button>
+      </nav>
     </main>
   </div>
 
@@ -1674,14 +1710,15 @@
   </div>
 
   <!-- BOTÃO FLUTUANTE DE AJUDA & DÚVIDAS COM IA -->
-  <button onclick="abrirChatSuporteIA()" id="btn-floating-chat-ia" class="fixed bottom-6 right-6 z-40 bg-[#0A213D] hover:bg-[#153358] text-white px-4 py-2.5 rounded-full shadow-lg border border-[#C5A059] flex items-center space-x-2 text-xs font-bold transition transform hover:scale-105 active:scale-95 no-print" title="Tirar dúvidas com a IA do Sistema">
+  <button onclick="abrirChatSuporteIA()" id="btn-floating-chat-ia" class="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-40 bg-[#0A213D] hover:bg-[#153358] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-full shadow-lg border border-[#C5A059] flex items-center space-x-1.5 sm:space-x-2 text-xs font-bold transition transform hover:scale-105 active:scale-95 no-print" title="Tirar dúvidas com a IA do Sistema">
     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
     <i data-lucide="sparkles" class="w-4 h-4 text-[#C5A059]"></i>
-    <span>Dúvidas do Sistema (IA)</span>
+    <span class="hidden sm:inline">Dúvidas do Sistema (IA)</span>
+    <span class="sm:hidden text-[11px]">Sara IA</span>
   </button>
 
   <!-- TOAST CONTAINER -->
-  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none no-print"></div>
+  <div id="toast-container" class="fixed bottom-20 right-3 sm:bottom-5 sm:right-5 z-50 flex flex-col space-y-2 pointer-events-none no-print max-w-[calc(100vw-24px)]"></div>
 
   <script src="app.js"></script>
 </body>

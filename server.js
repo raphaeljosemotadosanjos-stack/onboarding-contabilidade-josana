@@ -3270,12 +3270,11 @@ O Cockpit é a central operacional diária de cada colaborador técnico do escri
 4. **🤖 Diagnóstico de IA:**
    • Clique em **\`Gerar Novo Diagnóstico IA\`** para receber um relatório com análise do seu ritmo, pontos fortes e dicas técnicas para o seu setor!`;
 
-    // CENÁRIO L: MODO NOTURNO
+    // CENÁRIO L: PADRÃO VISUAL CORPORATIVO
     } else if (q.includes('noturno') || q.includes('dark') || q.includes('escuro') || /\b(tema|temas)\b/i.test(q)) {
-      resposta = `### 🌙 Modo Noturno (Notion Dark Mode):
+      resposta = `### ☀️ Padrão Visual Corporativo Josana Mota:
 
-• Para alternar entre o Modo Claro e o Modo Noturno, basta clicar no ícone de **Lua / Sol (🌙 / ☀️)** localizado no topo da tela ou na barra lateral.
-• O sistema adotará a estética sofisticada do Notion Dark Mode com a paleta oficial Josana Mota (Marinho e Dourado adaptados), salvando sua preferência para as próximas sessões.`;
+• O sistema opera exclusivamente na identidade corporativa oficial em alta definição diurna (Azul Marinho Real e Dourado Institucional sobre fundo claro), otimizado para computadores e smartphones com máxima legibilidade documental.`;
 
     // CENÁRIO M: RESPOSTA INTELIGENTE PARA QUALQUER OUTRA DEMANDA LIVRE
     } else {
