@@ -93,8 +93,16 @@ let estado = {
 function extrairTokenColeta() {
   const urlParams = new URLSearchParams(window.location.search);
   const tokenQuery = urlParams.get('coleta');
-  const tokenHash = window.location.hash.startsWith('#coleta=') ? window.location.hash.replace('#coleta=', '').trim() : null;
-  return tokenQuery || tokenHash;
+  let tokenHash = null;
+  if (window.location.hash.startsWith('#coleta=')) {
+    tokenHash = window.location.hash.replace('#coleta=', '').trim();
+  }
+  let tokenPath = null;
+  const matchPath = window.location.pathname.match(/\/coleta\/([^/?#]+)/i);
+  if (matchPath) {
+    tokenPath = decodeURIComponent(matchPath[1]);
+  }
+  return tokenQuery || tokenHash || tokenPath;
 }
 
 function extrairTokenSenha() {
@@ -5394,24 +5402,28 @@ async function copiarLinkColetaCliente() {
   if (!estado.fichaAtiva?.token_coleta) return alert('Token da ficha não localizado.');
   
   let baseUrl = window.location.origin;
-  // Se houver URL pública segura (Cloudflare HTTPS), prioriza para que funcione em qualquer celular/WhatsApp fora do escritório
-  try {
-    const res = await fetch('/api/info-servidor');
-    if (res.ok) {
-      const info = await res.json();
-      if (info.url_publica) {
-        baseUrl = info.url_publica;
-      } else if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && info.ip_rede && info.ip_rede !== 'localhost') {
-        baseUrl = info.url_rede;
+  // Se estiver rodando em localhost, tenta ver se há IP da rede local para testar em celular na mesma Wi-Fi
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    try {
+      const res = await fetch('/api/info-servidor');
+      if (res.ok) {
+        const info = await res.json();
+        if (info.url_publica && !info.url_publica.includes('trycloudflare.com')) {
+          baseUrl = info.url_publica;
+        } else if (info.ip_rede && info.ip_rede !== 'localhost') {
+          baseUrl = info.url_rede;
+        }
       }
-    }
-  } catch (e) {}
+    } catch (e) {}
+  }
 
-  const url = `${baseUrl}/#coleta=${estado.fichaAtiva.token_coleta}`;
+  const token = estado.fichaAtiva.token_coleta;
+  // Gera link compatível com WhatsApp tanto por query param quanto por hash
+  const url = `${baseUrl}/?coleta=${encodeURIComponent(token)}#coleta=${encodeURIComponent(token)}`;
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {
-      mostrarToast(`Link de WhatsApp copiado (${url})!`, 'sucesso');
+      mostrarToast('Link do formulário copiado com sucesso!', 'sucesso');
     }).catch(() => {
       prompt('Copie o link seguro abaixo para enviar ao cliente:', url);
     });
@@ -5540,7 +5552,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
               <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-2 gap-2">
                 <div>
                   <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
-                    <span class="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                    <i data-lucide="users" class="w-4 h-4 text-sky-600"></i>
                     <span>Dados dos Sócios & Administradores</span>
                   </h3>
                   <p class="text-[11px] text-slate-500">Qualificação civil completa e comprovantes de identificação e residência</p>
@@ -5553,7 +5565,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
               <!-- PERGUNTA 10 DO PDF: É MAIS DE UM SÓCIO? -->
               <div class="bg-sky-50/70 p-4 rounded-xl border border-sky-200 space-y-3">
                 <label class="block font-bold text-slate-900 text-xs">
-                  10. É mais de um sócio? Se sim, adicione os demais sócios da empresa: *
+                  A empresa terá mais de um sócio? Adicione os demais sócios se houver:
                 </label>
                 <div class="flex flex-wrap items-center gap-4 text-xs font-semibold">
                   <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-300">
@@ -5577,13 +5589,13 @@ async function iniciarVisualizacaoColetaExterna(token) {
             <!-- SEÇÃO 2: DADOS DA EMPRESA -->
             <div class="space-y-4 pt-4 border-t border-slate-200">
               <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
-                <span class="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                <i data-lucide="building-2" class="w-4 h-4 text-sky-600"></i>
                 <span>Dados da Empresa</span>
               </h3>
 
               <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
                 <div>
-                  <label class="block font-bold text-slate-900 mb-1">37. Nome empresarial (Razão Social) — Nos envie 03 opções: *</label>
+                  <label class="block font-bold text-slate-900 mb-1">Nome Empresarial (Razão Social) — 03 Opções em Ordem de Preferência: *</label>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label class="block text-[10px] font-semibold text-slate-600 mb-0.5">1ª Opção (Preferência) *</label>
@@ -5602,11 +5614,11 @@ async function iniciarVisualizacaoColetaExterna(token) {
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">38. Nome Fantasia *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Nome Fantasia (Nome Comercial / de Fachada): *</label>
                     <input type="text" name="nome_fantasia" required placeholder="Nome comercial ou de fachada" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">39. Natureza Jurídica *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Natureza Jurídica Prevista: *</label>
                     <select name="natureza_juridica" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
                       <option value="LTDA">Sociedade Limitada (LTDA)</option>
                       <option value="SLU">Sociedade Unipessoal (SLU)</option>
@@ -5614,7 +5626,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
                     </select>
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">40. Capital Social (R$ em dinheiro) *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Capital Social Inicial (em R$): *</label>
                     <input type="number" step="0.01" name="capital_social" required placeholder="10000.00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900">
                   </div>
                 </div>
@@ -5622,7 +5634,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
                 <!-- PERGUNTA 41 DO PDF: DIVISÃO DE QUOTAS -->
                 <div>
                   <label class="block font-bold text-slate-900 mb-1">
-                    41. Caso tenha sócios, qual a divisão de quotas para cada um dos sócios? Se não tiver, coloque 100% para o Sócio Administrador: *
+                    Divisão de Quotas entre os Sócios (ou 100% para o Sócio Administrador): *
                   </label>
                   <textarea name="divisao_quotas" rows="2" required placeholder="Ex: Sócio Administrador 60% (R$ 6.000), Sócio 02 40% (R$ 4.000) — ou 100% para o Administrador" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"></textarea>
                 </div>
@@ -5630,7 +5642,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
                 <!-- PERGUNTA 42 DO PDF: QUAIS SERÃO AS ATIVIDADES -->
                 <div>
                   <label class="block font-bold text-slate-900 mb-1">
-                    42. Quais serão as atividades exercidas pela empresa? *
+                    Descrição Detalhada das Atividades Exercidas pela Empresa: *
                   </label>
                   <p class="text-[11px] text-sky-800 bg-sky-50 p-2 rounded-lg border border-sky-200 mb-2">
                     💡 <em>Não se preocupe com códigos CNAE. Descreva livremente o que a empresa vai vender, fabricar ou prestar de serviço e nossa equipe contábil cuidará de todo o enquadramento fiscal e tributário.</em>
@@ -5643,22 +5655,22 @@ async function iniciarVisualizacaoColetaExterna(token) {
             <!-- SEÇÃO 3: ENDEREÇO EMPRESARIAL & IMÓVEL -->
             <div class="space-y-4 pt-4 border-t border-slate-200">
               <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
-                <span class="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-bold">3</span>
+                <i data-lucide="map-pin" class="w-4 h-4 text-sky-600"></i>
                 <span>Endereço Empresarial & Documentos do Imóvel</span>
               </h3>
 
               <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3.5">
                 <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
                   <div class="sm:col-span-2">
-                    <label class="block font-bold text-slate-900 mb-1">49. CEP (Preenchimento Automático) *</label>
+                    <label class="block font-bold text-slate-900 mb-1">CEP da Empresa (Busca Automática) *</label>
                     <input type="text" name="cep_empresa" id="cli-cep" required placeholder="00000-000" oninput="formatarEAutobuscarCep(this, 'externo-empresa')" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-sky-500">
                   </div>
                   <div class="sm:col-span-3">
-                    <label class="block font-bold text-slate-900 mb-1">43. Rua / Logradouro *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Rua / Logradouro *</label>
                     <input type="text" name="rua_empresa" id="cli-rua" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">44. Nº Porta *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Número *</label>
                     <input type="text" name="numero_empresa" id="cli-num" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                   </div>
                 </div>
@@ -5669,20 +5681,20 @@ async function iniciarVisualizacaoColetaExterna(token) {
                     <input type="text" name="complemento_empresa" placeholder="Ex: Sala 302" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">45. Ponto de Referência *</label>
-                    <input type="text" name="ponto_referencia_empresa" required placeholder="Ex: Próximo ao shopping" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
+                    <label class="block font-bold text-slate-900 mb-1">Ponto de Referência</label>
+                    <input type="text" name="ponto_referencia_empresa" placeholder="Ex: Próximo ao shopping" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">46. Bairro *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Bairro *</label>
                     <input type="text" name="bairro_empresa" id="cli-bairro" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                   </div>
                   <div class="grid grid-cols-2 gap-1.5">
                     <div>
-                      <label class="block font-bold text-slate-900 mb-1">47. Cidade *</label>
+                      <label class="block font-bold text-slate-900 mb-1">Cidade *</label>
                       <input type="text" name="cidade_empresa" id="cli-cidade" required class="w-full px-2 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                     </div>
                     <div>
-                      <label class="block font-bold text-slate-900 mb-1">48. UF *</label>
+                      <label class="block font-bold text-slate-900 mb-1">Estado (UF) *</label>
                       <input type="text" name="estado_empresa" id="cli-uf" maxlength="2" required class="w-full px-2 py-2 bg-white border border-slate-300 rounded-lg text-xs uppercase font-semibold">
                     </div>
                   </div>
@@ -5692,7 +5704,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
                 <div class="pt-2 border-t border-slate-200 space-y-3">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label class="block font-bold text-slate-900 mb-1">50. Qual o tipo do imóvel? *</label>
+                      <label class="block font-bold text-slate-900 mb-1">Tipo do Imóvel da Empresa: *</label>
                       <select name="tipo_imovel" id="cli-tipo-imovel" onchange="toggleCamposLocacaoCliente(this.value)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
                         <option value="PROPRIO">Próprio</option>
                         <option value="ALUGADO">Alugado</option>
@@ -5700,8 +5712,8 @@ async function iniciarVisualizacaoColetaExterna(token) {
                       </select>
                     </div>
                     <div>
-                      <label class="block font-bold text-slate-900 mb-1">Inscrição Imobiliária (IPTU) *</label>
-                      <input type="text" name="inscricao_iptu" required placeholder="Número no carnê de IPTU" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono">
+                      <label class="block font-bold text-slate-900 mb-1">Inscrição Imobiliária (IPTU)</label>
+                      <input type="text" name="inscricao_iptu" placeholder="Número no carnê de IPTU (se disponível)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono">
                     </div>
                   </div>
 
@@ -5709,16 +5721,16 @@ async function iniciarVisualizacaoColetaExterna(token) {
                   <div id="container-cli-locacao" class="hidden bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-3">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label class="block font-bold text-slate-900 mb-1">51. Qual o Nome do Proprietário / Locador?</label>
+                        <label class="block font-bold text-slate-900 mb-1">Nome do Proprietário / Locador:</label>
                         <input type="text" name="proprietario_nome" placeholder="Nome completo ou Razão Social" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                       </div>
                       <div>
-                        <label class="block font-bold text-slate-900 mb-1">52. Qual o CPF ou CNPJ do proprietário?</label>
+                        <label class="block font-bold text-slate-900 mb-1">CPF ou CNPJ do Proprietário:</label>
                         <input type="text" name="proprietario_doc" placeholder="000.000.000-00 ou CNPJ" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                       </div>
                     </div>
                     <div class="bg-white p-3 rounded-lg border border-amber-200">
-                      <label class="block font-bold text-slate-900 mb-1">53. Caso seja alugado, anexe o Contrato de Aluguel:</label>
+                      <label class="block font-bold text-slate-900 mb-1">Contrato de Aluguel (caso o imóvel seja alugado):</label>
                       <input type="file" id="cli-file-aluguel" onchange="atualizarFeedbackArquivo(this, 'fb-cli-aluguel')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-amber-100 file:text-amber-900 hover:file:bg-amber-200">
                       <div id="fb-cli-aluguel"></div>
                     </div>
@@ -5727,13 +5739,13 @@ async function iniciarVisualizacaoColetaExterna(token) {
                   <!-- PERGUNTAS 54 E 55: ANEXOS IPTU E HABITE-SE -->
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
-                      <label class="block font-bold text-slate-900">54. Anexe o IPTU do imóvel: *</label>
+                      <label class="block font-bold text-slate-900">Espelho ou carnê do IPTU do imóvel:</label>
                       <p class="text-[10px] text-slate-500 mb-1.5">Espelho ou folha frontal do carnê de IPTU</p>
                       <input type="file" id="cli-file-iptu" onchange="atualizarFeedbackArquivo(this, 'fb-cli-iptu')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-sky-100 file:text-sky-900 hover:file:bg-sky-200">
                       <div id="fb-cli-iptu"></div>
                     </div>
                     <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
-                      <label class="block font-bold text-slate-900">55. Habite-se do Local: *</label>
+                      <label class="block font-bold text-slate-900">Habite-se do Local (se possuir):</label>
                       <p class="text-[10px] text-slate-500 mb-1.5">Certificado de Conclusão / Habite-se ou AVCB</p>
                       <input type="file" id="cli-file-habitese" onchange="atualizarFeedbackArquivo(this, 'fb-cli-habitese')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-sky-100 file:text-sky-900 hover:file:bg-sky-200">
                       <div id="fb-cli-habitese"></div>
@@ -5748,7 +5760,7 @@ async function iniciarVisualizacaoColetaExterna(token) {
               <div class="flex items-center justify-between">
                 <div>
                   <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
-                    <span class="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-bold">4</span>
+                    <i data-lucide="award" class="w-4 h-4 text-sky-600"></i>
                     <span>Dados Profissionais</span>
                   </h3>
                   <p class="text-[11px] text-slate-500">Caso seja uma empresa que necessite de um responsável técnico profissional</p>
@@ -5762,32 +5774,32 @@ async function iniciarVisualizacaoColetaExterna(token) {
               <div id="secao-resp-cliente" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3.5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">58. Nome do Responsável Técnico:</label>
+                    <label class="block font-bold text-slate-900 mb-1">Nome Completo do Responsável Técnico:</label>
                     <input type="text" name="resp_tecnico_nome" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">59. CPF do Responsável Técnico:</label>
+                    <label class="block font-bold text-slate-900 mb-1">CPF do Responsável Técnico:</label>
                     <input type="text" name="resp_tecnico_cpf" placeholder="000.000.000-00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                   </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">60. Conselho Profissional:</label>
+                    <label class="block font-bold text-slate-900 mb-1">Conselho Profissional (Ex: CRM, CREA, CRO):</label>
                     <input type="text" name="resp_tecnico_conselho" placeholder="Ex: CRM, CREA, CRO, OAB" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">56. Número do Conselho Profissional:</label>
+                    <label class="block font-bold text-slate-900 mb-1">Número de Registro no Conselho:</label>
                     <input type="text" name="resp_tecnico_numero" placeholder="Ex: 123456" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono">
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">57. Estado do Conselho Profissional:</label>
+                    <label class="block font-bold text-slate-900 mb-1">Estado (UF) do Conselho:</label>
                     <input type="text" name="resp_tecnico_estado" maxlength="2" placeholder="SP" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs uppercase font-semibold">
                   </div>
                 </div>
 
                 <div class="bg-white p-3.5 rounded-xl border border-slate-200">
-                  <label class="block font-bold text-slate-900 mb-1">61. Anexe a Carteira Profissional do Responsável Técnico:</label>
+                  <label class="block font-bold text-slate-900 mb-1">Anexe a Carteira Profissional do Responsável Técnico:</label>
                   <input type="file" id="cli-file-conselho" onchange="atualizarFeedbackArquivo(this, 'fb-cli-conselho')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-purple-100 file:text-purple-900 hover:file:bg-purple-200">
                   <div id="fb-cli-conselho"></div>
                 </div>
@@ -5797,39 +5809,39 @@ async function iniciarVisualizacaoColetaExterna(token) {
             <!-- SEÇÃO 5: INFORMAÇÕES COMPLEMENTARES (PERGUNTAS 62 A 66 DO PDF) -->
             <div class="space-y-4 pt-4 border-t border-slate-200">
               <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
-                <span class="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-bold">5</span>
+                <i data-lucide="info" class="w-4 h-4 text-sky-600"></i>
                 <span>Informações Complementares</span>
               </h3>
 
               <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">62. Qual o faturamento mensal estimado (em R$)? *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Faturamento Mensal Estimado (em R$): *</label>
                     <input type="number" step="0.01" name="faturamento_estimado" required placeholder="Ex: 20000.00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-emerald-800">
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">63. Qual o número de funcionários inicial? *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Número Inicial de Funcionários: *</label>
                     <input type="number" name="qtd_funcionarios_inicial" required value="0" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
                   </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200">
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">64. Possui Certificado Digital? *</label>
+                    <label class="block font-bold text-slate-900 mb-1">Os sócios já possuem Certificado Digital e-CPF? *</label>
                     <select name="possui_certificado" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
                       <option value="0">Não</option>
                       <option value="1">Sim (e-CPF dos sócios)</option>
                     </select>
                   </div>
                   <div>
-                    <label class="block font-bold text-slate-900 mb-1">65. Caso não tenha certificado digital, disponibilize a senha GOV:</label>
+                    <label class="block font-bold text-slate-900 mb-1">Senha GOV.BR (caso não tenha certificado digital):</label>
                     <input type="password" name="senha_gov" placeholder="Senha GOV.BR (nível Prata ou Ouro)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
                     <span class="block text-[10px] text-slate-400 mt-0.5">Necessária para assinatura do DBE na Receita Federal.</span>
                   </div>
                 </div>
 
                 <div>
-                  <label class="block font-bold text-slate-900 mb-1">66. Espaço para observações adicionais, caso queira fazer:</label>
+                  <label class="block font-bold text-slate-900 mb-1">Observações Adicionais:</label>
                   <textarea name="observacoes_cliente" rows="2" placeholder="Alguma observação, prazo especial ou instrução que gostaria de passar para a equipe do escritório?" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"></textarea>
                 </div>
               </div>
@@ -5838,13 +5850,13 @@ async function iniciarVisualizacaoColetaExterna(token) {
             <!-- SEÇÃO 6: DECLARAÇÃO DE VERACIDADE (PERGUNTA 67 DO PDF) -->
             <div class="space-y-3 pt-4 border-t border-slate-200">
               <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
-                <span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">6</span>
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
                 <span>Declaração de Veracidade</span>
               </h3>
 
               <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-300 space-y-2">
                 <label class="block font-bold text-emerald-950 text-xs">
-                  67. Declaro que as informações dadas anteriormente são verdadeiras: *
+                  Declaro que todas as informações prestadas são verdadeiras e autênticas *
                 </label>
                 <div class="flex items-center space-x-6 text-xs font-semibold pt-1">
                   <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-emerald-300 text-emerald-950">
@@ -5993,7 +6005,7 @@ function renderSociosFormularioCliente() {
     <div class="bg-slate-50 p-5 rounded-2xl border ${idx === 0 ? 'border-sky-300 ring-2 ring-sky-100' : 'border-slate-300'} space-y-4 relative shadow-2xs" id="card-cli-socio-${idx}">
       <div class="flex items-center justify-between pb-2.5 border-b border-slate-200">
         <div class="flex items-center space-x-2">
-          <span class="w-6 h-6 rounded-full bg-sky-600 text-white flex items-center justify-center text-xs font-bold">${idx + 1}</span>
+          <i data-lucide="user" class="w-4 h-4 text-sky-600"></i>
           <h4 class="font-bold text-slate-900 text-sm">
             ${idx === 0 ? 'Dados do Sócio Administrador' : `Dados do Sócio 0${idx + 1}`}
           </h4>
@@ -6011,13 +6023,13 @@ function renderSociosFormularioCliente() {
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="sm:col-span-2">
           <label class="block font-bold text-slate-900 mb-1">
-            ${idx === 0 ? '1. Nome completo do Sócio Administrador *' : `11. Nome completo do Sócio 0${idx + 1}: *`}
+            ${idx === 0 ? 'Nome Completo do Sócio Administrador *' : `Nome Completo do Sócio 0${idx + 1}: *`}
           </label>
           <input type="text" id="cli-soc-nome-${idx}" value="${s.nome_completo || ''}" required placeholder="Nome completo conforme RG/CNH" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
         </div>
         <div>
           <label class="block font-bold text-slate-900 mb-1">
-            ${idx === 0 ? '2. CPF do Sócio Administrador *' : `12. CPF do Sócio 0${idx + 1}: *`}
+            ${idx === 0 ? 'CPF do Sócio Administrador *' : `CPF do Sócio 0${idx + 1}: *`}
           </label>
           <input type="text" id="cli-soc-cpf-${idx}" value="${s.cpf || ''}" required placeholder="000.000.000-00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono">
         </div>
@@ -6027,13 +6039,13 @@ function renderSociosFormularioCliente() {
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div>
           <label class="block font-bold text-slate-900 mb-1">
-            ${idx === 0 ? '3. Data de Nascimento *' : `13. Data de Nascimento: *`}
+            Data de Nascimento *
           </label>
           <input type="date" id="cli-soc-nasc-${idx}" value="${s.data_nascimento || ''}" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
         </div>
         <div>
           <label class="block font-bold text-slate-900 mb-1">
-            ${idx === 0 ? '4. Qual o Estado Civil? *' : `14. Qual o Estado Civil? *`}
+            Estado Civil *
           </label>
           <select id="cli-soc-civil-${idx}" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
             <option value="Solteiro" ${s.estado_civil === 'Solteiro' || s.estado_civil === 'Solteiro(a)' ? 'selected' : ''}>Solteiro</option>
@@ -6045,13 +6057,13 @@ function renderSociosFormularioCliente() {
         </div>
         <div>
           <label class="block font-medium text-slate-700 mb-1">
-            ${idx === 0 ? '5. Regime de casamento (se casado)' : `15. Regime de casamento (se casado)`}
+            Regime de Casamento (caso seja casado)
           </label>
           <input type="text" id="cli-soc-regime-${idx}" value="${s.regime_casamento || ''}" placeholder="Ex: Comunhão Parcial" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
         </div>
         <div>
           <label class="block font-bold text-slate-900 mb-1">
-            ${idx === 0 ? '6. Qual a profissão? *' : `16. Qual a profissão? *`}
+            Profissão *
           </label>
           <input type="text" id="cli-soc-profissao-${idx}" value="${s.profissao || ''}" required placeholder="Ex: Médico, Engenheiro, Empresário" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
         </div>
@@ -6060,13 +6072,13 @@ function renderSociosFormularioCliente() {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="block font-bold text-slate-900 mb-1">
-            ${idx === 0 ? '7. Qual o e-mail? *' : `17. Qual o e-mail? *`}
+            E-mail *
           </label>
           <input type="email" id="cli-soc-email-${idx}" value="${s.email || ''}" required placeholder="seu@email.com" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
         </div>
         <div>
           <label class="block font-bold text-slate-900 mb-1">
-            ${idx === 0 ? '8. Qual o telefone / WhatsApp? *' : `18. Qual o telefone / WhatsApp? *`}
+            Telefone / WhatsApp *
           </label>
           <input type="text" id="cli-soc-tel-${idx}" value="${s.telefone || ''}" required placeholder="(11) 90000-0000" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs">
         </div>
@@ -6075,7 +6087,7 @@ function renderSociosFormularioCliente() {
       <!-- PERGUNTA 9 / 19 / 28 DO PDF: ANEXO DO DOCUMENTO DE IDENTIFICAÇÃO -->
       <div class="bg-white p-3.5 rounded-xl border border-sky-200 space-y-1">
         <label class="block font-bold text-slate-900">
-          ${idx === 0 ? '9. Anexe um Documento de Identificação (RG, CNH e Carteira Profissional) *' : `19. Anexe um Documento de Identificação (RG, CNH e Carteira Profissional): *`}
+          Documento de Identificação com Foto (RG, CNH ou Carteira Profissional) *
         </label>
         <p class="text-[10px] text-slate-500 mb-1.5">Frente e verso nítidos em PDF ou imagem (PNG, JPG)</p>
         <input type="file" id="cli-soc-file-doc-${idx}" onchange="atualizarFeedbackArquivo(this, 'fb-soc-doc-${idx}')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-sky-100 file:text-sky-900 hover:file:bg-sky-200">
@@ -6093,35 +6105,35 @@ function renderSociosFormularioCliente() {
 
         <div class="grid grid-cols-1 sm:grid-cols-6 gap-2.5">
           <div class="sm:col-span-2">
-            <label class="block font-bold text-slate-900 mb-0.5">35. Qual o CEP? *</label>
+            <label class="block font-bold text-slate-900 mb-0.5">CEP Residencial (Busca Automática) *</label>
             <input type="text" id="cli-soc-cep-${idx}" value="${s.cep || ''}" required placeholder="00000-000" oninput="formatarEAutobuscarCep(this, 'externo-socio', ${idx})" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-sky-500">
           </div>
           <div class="sm:col-span-3">
-            <label class="block font-bold text-slate-900 mb-0.5">29. Qual a rua? *</label>
+            <label class="block font-bold text-slate-900 mb-0.5">Rua / Logradouro *</label>
             <input type="text" id="cli-soc-rua-${idx}" value="${s.rua || ''}" required class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
           </div>
           <div>
-            <label class="block font-bold text-slate-900 mb-0.5">30. Nº residência *</label>
+            <label class="block font-bold text-slate-900 mb-0.5">Número Residencial *</label>
             <input type="text" id="cli-soc-num-${idx}" value="${s.numero || ''}" required class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
           <div>
-            <label class="block font-bold text-slate-900 mb-0.5">31. Ponto de referência *</label>
-            <input type="text" id="cli-soc-ref-${idx}" value="${s.ponto_referencia || ''}" required placeholder="Ex: Próximo à padaria" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
+            <label class="block font-bold text-slate-900 mb-0.5">Ponto de Referência</label>
+            <input type="text" id="cli-soc-ref-${idx}" value="${s.ponto_referencia || ''}" placeholder="Ex: Próximo à padaria" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
           </div>
           <div>
-            <label class="block font-bold text-slate-900 mb-0.5">32. Qual o bairro? *</label>
+            <label class="block font-bold text-slate-900 mb-0.5">Bairro *</label>
             <input type="text" id="cli-soc-bairro-${idx}" value="${s.bairro || ''}" required class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
           </div>
           <div>
-            <label class="block font-bold text-slate-900 mb-0.5">33. Qual a cidade? *</label>
+            <label class="block font-bold text-slate-900 mb-0.5">Cidade *</label>
             <input type="text" id="cli-soc-cidade-${idx}" value="${s.cidade || ''}" required class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
           </div>
           <div class="grid grid-cols-2 gap-1.5">
             <div>
-              <label class="block font-bold text-slate-900 mb-0.5">34. Estado *</label>
+              <label class="block font-bold text-slate-900 mb-0.5">Estado (UF) *</label>
               <input type="text" id="cli-soc-uf-${idx}" value="${s.estado || ''}" maxlength="2" required class="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs uppercase font-semibold">
             </div>
             <div>
@@ -6134,7 +6146,7 @@ function renderSociosFormularioCliente() {
         <!-- PERGUNTA 36 DO PDF: COMPROVANTE DE RESIDÊNCIA -->
         <div class="pt-2 border-t border-slate-100">
           <label class="block font-bold text-slate-900 mb-1">
-            36. Anexe o comprovante de residência: *
+            Comprovante de Residência (Conta de consumo recente)
           </label>
           <p class="text-[10px] text-slate-500 mb-1.5">Conta de luz, água ou gás recente (emitida nos últimos 90 dias)</p>
           <input type="file" id="cli-soc-file-res-${idx}" onchange="atualizarFeedbackArquivo(this, 'fb-soc-res-${idx}')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-sky-100 file:text-sky-900 hover:file:bg-sky-200">
@@ -6332,7 +6344,10 @@ async function enviarColetaCompletaCliente(event, token) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error('Erro ao enviar dados para a contabilidade.');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Erro ao enviar dados para a contabilidade.');
+    }
 
     form.classList.add('hidden');
     document.getElementById('coleta-sucesso').classList.remove('hidden');

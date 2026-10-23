@@ -2468,12 +2468,15 @@ app.get('/api/info-servidor', (req, res) => {
       if (ipRede !== 'localhost') break;
     }
 
+    // Detectar URL pública do Render ou do domínio de acesso
     let urlPublica = null;
-    const tunnelFile = path.join(__dirname, 'tunnel_url.txt');
-    if (fs.existsSync(tunnelFile)) {
-      const conteudo = fs.readFileSync(tunnelFile, 'utf8').trim();
-      if (conteudo.startsWith('http')) {
-        urlPublica = conteudo;
+    if (process.env.RENDER_EXTERNAL_URL) {
+      urlPublica = process.env.RENDER_EXTERNAL_URL;
+    } else {
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      if (host && !host.startsWith('localhost') && !host.startsWith('127.0.0.1')) {
+        const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+        urlPublica = `${proto}://${host}`;
       }
     }
 
@@ -2487,6 +2490,12 @@ app.get('/api/info-servidor', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Redirecionamento amigável para /coleta/:token
+app.get('/coleta/:token', (req, res) => {
+  const token = encodeURIComponent(req.params.token);
+  res.redirect(`/?coleta=${token}#coleta=${token}`);
 });
 
 // Coleta externa rápida via link para envio ao cliente (WhatsApp)
