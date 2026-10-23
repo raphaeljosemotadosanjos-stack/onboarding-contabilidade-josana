@@ -2515,6 +2515,18 @@ app.get('/coleta/:token', (req, res) => {
   res.redirect(`/?coleta=${token}#coleta=${token}`);
 });
 
+// Redirecionamento amigável para /minuta/:token (Visualização e aprovação de minuta pelo cliente)
+app.get('/minuta/:token', (req, res) => {
+  const token = encodeURIComponent(req.params.token);
+  res.redirect(`/?minuta=${token}#minuta=${token}`);
+});
+
+// Redirecionamento amigável para /rastreio/:token (Timeline de abertura da empresa para o cliente)
+app.get('/rastreio/:token', (req, res) => {
+  const token = encodeURIComponent(req.params.token);
+  res.redirect(`/?rastreio=${token}#rastreio=${token}`);
+});
+
 // Coleta externa rápida via link para envio ao cliente (WhatsApp)
 app.get('/api/coleta-externa/:token', (req, res) => {
   try {
@@ -2865,6 +2877,426 @@ app.post('/api/coleta-externa/:token', (req, res) => {
     }
 
     res.json({ success: true, message: 'Dados e documentos recebidos com sucesso pelo escritório!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =========================================================================
+// MÓDULO: GERADOR DE MINUTA DO CONTRATO SOCIAL & EXTENSO
+// =========================================================================
+
+function valorPorExtenso(valor) {
+  const v = Math.round(Number(valor) * 100) / 100;
+  if (!v || isNaN(v) || v <= 0) return 'zero real';
+  
+  const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+  const de10a19 = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+  function converterCentena(n) {
+    if (n === 0) return '';
+    if (n === 100) return 'cem';
+    const c = Math.floor(n / 100);
+    const d = Math.floor((n % 100) / 10);
+    const u = n % 10;
+    const partes = [];
+    if (c > 0) partes.push(centenas[c]);
+    if (d === 1) {
+      partes.push(de10a19[u]);
+    } else {
+      if (d > 1) partes.push(dezenas[d]);
+      if (u > 0) partes.push(unidades[u]);
+    }
+    return partes.join(' e ');
+  }
+
+  const parteInteira = Math.floor(v);
+  const centavos = Math.round((v - parteInteira) * 100);
+
+  const milhoes = Math.floor(parteInteira / 1000000);
+  const milhares = Math.floor((parteInteira % 1000000) / 1000);
+  const resto = parteInteira % 1000;
+
+  const grupos = [];
+  if (milhoes > 0) {
+    grupos.push(converterCentena(milhoes) + (milhoes === 1 ? ' milhão' : ' milhões'));
+  }
+  if (milhares > 0) {
+    grupos.push((milhares === 1 ? 'um' : converterCentena(milhares)) + ' mil');
+  }
+  if (resto > 0) {
+    grupos.push(converterCentena(resto));
+  }
+
+  let textoReais = '';
+  if (parteInteira === 0) {
+    textoReais = '';
+  } else if (parteInteira === 1) {
+    textoReais = 'um real';
+  } else {
+    textoReais = grupos.join(' e ') + ' reais';
+  }
+
+  let textoCentavos = '';
+  if (centavos > 0) {
+    textoCentavos = (centavos === 1 ? 'um centavo' : converterCentena(centavos) + ' centavos');
+  }
+
+  if (textoReais && textoCentavos) return `${textoReais} e ${textoCentavos}`;
+  if (textoReais) return textoReais;
+  if (textoCentavos) return textoCentavos;
+  return 'zero real';
+}
+
+function gerarMinutaContratoSocial(cliente, ficha, socios) {
+  const razaoSocial = (ficha?.razao_social_op1 || cliente?.razao_social || 'EMPRESA EM CONSTITUIÇÃO').toUpperCase();
+  const nomeFantasia = (ficha?.nome_fantasia || cliente?.nome_fantasia || razaoSocial).toUpperCase();
+  const natureza = ficha?.natureza_juridica || 'LTDA';
+  const capitalNum = parseValorMoeda(ficha?.capital_social) || 10000;
+  const capitalExtenso = valorPorExtenso(capitalNum);
+  const capitalFormatado = capitalNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const totalQuotas = Math.round(capitalNum);
+
+  const sociosLista = (socios && socios.length > 0) ? socios : [{
+    nome_completo: cliente?.contato_nome || 'Sócio Titular',
+    cpf: '000.000.000-00',
+    estado_civil: 'Solteiro',
+    regime_casamento: '',
+    profissao: 'Empresário',
+    is_administrador: 1,
+    percentual_quotas: 100,
+    valor_quotas: capitalNum
+  }];
+
+  const ehUnipessoal = natureza === 'SLU' || sociosLista.length === 1;
+
+  // Qualificação formal dos sócios
+  const qualificacaoSocios = sociosLista.map((s, idx) => {
+    const nome = (s.nome_completo || `SÓCIO 0${idx + 1}`).toUpperCase();
+    const nacionalidade = 'brasileiro(a)';
+    const civil = s.estado_civil || 'solteiro(a)';
+    const regime = s.regime_casamento ? `, sob o regime de ${s.regime_casamento}` : '';
+    const profissao = s.profissao || 'empresário(a)';
+    const cpf = s.cpf ? `inscrito(a) no CPF/MF sob o nº ${s.cpf}` : 'inscrito no CPF';
+    const doc = s.rg ? `, portador(a) do RG nº ${s.rg}${s.orgao_emissor ? ' ' + s.orgao_emissor : ''}` : '';
+    const nasc = s.data_nascimento ? `, nascido(a) em ${s.data_nascimento}` : '';
+    const end = [s.rua, s.numero, s.complemento, s.bairro, s.cidade ? `${s.cidade}/${s.estado || 'SP'}` : '', s.cep ? `CEP ${s.cep}` : ''].filter(Boolean).join(', ');
+    const endereco = end ? `residente e domiciliado(a) na ${end}` : 'residente e domiciliado(a) neste município';
+
+    return `${idx + 1}. ${nome}, ${nacionalidade}, ${civil}${regime}${nasc}, ${profissao}${doc}, ${cpf}, ${endereco};`;
+  }).join('\n\n');
+
+  // Endereço da sede
+  const endSede = [ficha?.rua_empresa, ficha?.numero_empresa, ficha?.complemento_empresa, ficha?.bairro_empresa, `${ficha?.cidade_empresa || 'São Paulo'}/${ficha?.estado_empresa || 'SP'}`, ficha?.cep_empresa ? `CEP ${ficha?.cep_empresa}` : ''].filter(Boolean).join(', ');
+
+  // Objeto social
+  const objetoSocial = ficha?.atividades_descricao || 'Prestação de serviços e comércio de mercadorias em geral.';
+
+  // Sócios administradores
+  const administradores = sociosLista.filter(s => s.is_administrador === 1 || s.is_administrador === true);
+  const nomesAdmins = (administradores.length > 0 ? administradores : [sociosLista[0]]).map(a => a.nome_completo).join(' e ');
+
+  // Título e preâmbulo
+  const titulo = ehUnipessoal
+    ? `INSTRUMENTO PARTICULAR DE CONSTITUIÇÃO DE SOCIEDADE LIMITADA UNIPESSOAL\nDE: ${razaoSocial}`
+    : `CONTRATO SOCIAL DE CONSTITUIÇÃO DE SOCIEDADE LIMITADA\nDE: ${razaoSocial}`;
+
+  const preambulo = ehUnipessoal
+    ? `Pelo presente instrumento particular, o único titular:\n\n${qualificacaoSocios}\n\nResolve constituir uma Sociedade Limitada Unipessoal, que se regerá pelas seguintes cláusulas e condições:`
+    : `Pelo presente instrumento particular, os abaixo assinados:\n\n${qualificacaoSocios}\n\nConstituem entre si uma Sociedade Limitada, que se regerá pelas seguintes cláusulas e condições:`;
+
+  // Distribuição de quotas
+  const distribuicaoQuotas = sociosLista.map((s, idx) => {
+    const pct = parseFloat(s.percentual_quotas) || (100 / sociosLista.length);
+    const quotasSocio = Math.round((capitalNum * pct) / 100);
+    const valSocio = quotasSocio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return `• Sócio(a) ${s.nome_completo}: ${quotasSocio.toLocaleString('pt-BR')} quotas, no valor total de ${valSocio} (${pct.toFixed(2)}% do capital social);`;
+  }).join('\n');
+
+  return `${titulo}
+
+${preambulo}
+
+CLÁUSULA PRIMEIRA – DA DENOMINAÇÃO E SEDE
+A sociedade girará sob a denominação social de "${razaoSocial}", adotando o nome a fantasia de "${nomeFantasia}".
+Parágrafo Primeiro: A sociedade terá sua sede e domicílio estabelecida na ${endSede}.
+Parágrafo Segundo: A sociedade poderá a qualquer tempo, por deliberação do(s) sócio(s), abrir, transferir ou encerrar filiais, escritórios ou depósitos em qualquer parte do território nacional ou no exterior.
+
+CLÁUSULA SEGUNDA – DO OBJETO SOCIAL
+A sociedade tem por objeto social a consecução das seguintes atividades econômicas e operacionais:
+"${objetoSocial}"
+
+CLÁUSULA TERCEIRA – DO PRAZO DE DURAÇÃO
+O prazo de duração da sociedade é por tempo indeterminado, tendo seu início a partir da data do registro dos seus atos constitutivos no órgão competente.
+
+CLÁUSULA QUARTA – DO CAPITAL SOCIAL E DAS QUOTAS
+O capital social é de ${capitalFormatado} (${capitalExtenso}), dividido em ${totalQuotas.toLocaleString('pt-BR')} quotas no valor nominal de R$ 1,00 (um real) cada uma, totalmente subscritas e integralizadas neste ato em moeda corrente do país, distribuídas entre os sócios da seguinte conformidade:
+
+${distribuicaoQuotas}
+
+Parágrafo Único: A responsabilidade de cada sócio é restrita ao valor de suas quotas, mas todos respondem solidariamente pela integralização do capital social, em consonância com o artigo 1.052 da Lei Federal nº 10.406/2002 (Código Civil Brasileiro).
+
+CLÁUSULA QUINTA – DA ADMINISTRAÇÃO E USO DA DENOMINAÇÃO
+A administração da sociedade caberá com exclusividade ao(à) sócio(a) ${nomesAdmins}, com a denominação de Sócio(a)-Administrador(a), a quem competirá a gestão dos negócios e a representação ativa, passiva, judicial e extrajudicial da sociedade.
+Parágrafo Primeiro: É expressamente vedado o uso da denominação social em atividades estranhas ao interesse e aos objetivos da sociedade, tais como avais, fianças, cauções ou quaisquer outros atos de favor a terceiros, sob pena de nulidade do ato e responsabilidade pessoal e civil do infrator.
+Parágrafo Segundo: Os administradores declaram sob as penas da lei que não estão incursos em quaisquer dos crimes previstos em lei que os impeçam de exercer a atividade mercantil.
+
+CLÁUSULA SEXTA – DO PRÓ-LABORE E DISTRIBUIÇÃO DE LUCROS
+Os administradores farão jus a uma retirada mensal a título de pró-labore pelos serviços prestados à sociedade, observados os limites e disposições da legislação fiscal e previdenciária em vigor.
+Parágrafo Único: Ao término de cada exercício financeiro, que coincidirá com o ano civil em 31 de dezembro, proceder-se-á ao levantamento das demonstrações contábeis e balanço patrimonial, sendo os lucros líquidos remanescentes distribuídos ou destinados aos sócios na exata proporção de suas participações societárias.
+
+CLÁUSULA SÉTIMA – DA CESSÃO E TRANSFERÊNCIA DE QUOTAS
+As quotas da sociedade são indivisíveis perante a sociedade e não poderão ser cedidas ou transferidas a terceiros estranhos ao quadro societário sem o prévio e expresso consentimento dos demais sócios, aos quais é assegurado o direito de preferência em igualdade de condições.
+
+CLÁUSULA OITAVA – DO FALECIMENTO OU INTERDIÇÃO DE SÓCIOS
+O falecimento ou interdição de qualquer sócio não dissolverá a sociedade, prosseguindo esta com os herdeiros ou sucessores do falecido, que indicarão um representante comum para exercer os respectivos direitos societários até a conclusão da partilha ou inventário.
+
+CLÁUSULA NONA – DO FORO
+Para dirimir quaisquer controvérsias ou litígios oriundos deste contrato social, fica expressamente eleito o Foro da Comarca de ${ficha?.cidade_empresa || 'São Paulo'}/${ficha?.estado_empresa || 'SP'}, com expressa renúncia a qualquer outro, por mais privilegiado que seja ou venha a ser.
+
+E por estarem assim justos e contratados, assinam o presente instrumento em vias de igual teor e forma para os devidos fins de direito perante os órgãos de Registro e Juntas Comerciais.
+
+${ficha?.cidade_empresa || 'Local'}, ${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.
+
+___________________________________________________
+${sociosLista.map(s => `${(s.nome_completo || 'SÓCIO').toUpperCase()}\nCPF: ${s.cpf || '000.000.000-00'}`).join('\n\n___________________________________________________\n')}`;
+}
+
+// -------------------------------------------------------------
+// ENDPOINTS DE CHECKLIST TEMPLATES (MODELOS MESTRE)
+// Permite que Gestor e Onboarding alterem etapas e tarefas para próximos clientes
+// -------------------------------------------------------------
+app.get('/api/checklist-templates', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM checklist_templates WHERE ativo = 1 ORDER BY etapa_numero ASC, ordem ASC, id ASC').all();
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/checklist-templates', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    if (auth && auth.perfil === 'TECNICO') {
+      return res.status(403).json({ error: 'Apenas Gestores e Coordenação de Onboarding podem alterar os modelos de checklist.' });
+    }
+    const { modulo, etapa_numero, titulo, departamento, ordem } = req.body;
+    if (!titulo || !departamento) {
+      return res.status(400).json({ error: 'Título e Departamento são campos obrigatórios.' });
+    }
+    const id = `tpl_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    db.prepare(`
+      INSERT INTO checklist_templates (id, modulo, etapa_numero, titulo, departamento, ordem, ativo, updated_by)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+    `).run(
+      id,
+      modulo || 'MODULO_A_GERAL',
+      parseInt(etapa_numero) || 1,
+      titulo.trim(),
+      departamento,
+      parseInt(ordem) || 0,
+      auth?.nome || 'Coordenação'
+    );
+    res.status(201).json({ success: true, id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/checklist-templates/:id', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    if (auth && auth.perfil === 'TECNICO') {
+      return res.status(403).json({ error: 'Apenas Gestores e Coordenação de Onboarding podem alterar os modelos de checklist.' });
+    }
+    const { id } = req.params;
+    const { modulo, etapa_numero, titulo, departamento, ordem } = req.body;
+    db.prepare(`
+      UPDATE checklist_templates
+      SET modulo = COALESCE(?, modulo),
+          etapa_numero = COALESCE(?, etapa_numero),
+          titulo = COALESCE(?, titulo),
+          departamento = COALESCE(?, departamento),
+          ordem = COALESCE(?, ordem),
+          updated_at = CURRENT_TIMESTAMP,
+          updated_by = ?
+      WHERE id = ?
+    `).run(
+      modulo,
+      etapa_numero !== undefined ? parseInt(etapa_numero) : null,
+      titulo ? titulo.trim() : null,
+      departamento,
+      ordem !== undefined ? parseInt(ordem) : null,
+      auth?.nome || 'Coordenação',
+      id
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/checklist-templates/:id', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    if (auth && auth.perfil === 'TECNICO') {
+      return res.status(403).json({ error: 'Apenas Gestores e Coordenação de Onboarding podem alterar os modelos de checklist.' });
+    }
+    const { id } = req.params;
+    db.prepare('UPDATE checklist_templates SET ativo = 0, updated_by = ? WHERE id = ?').run(auth?.nome || 'Coordenação', id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
+// ENDPOINTS DE MINUTA DO CONTRATO SOCIAL
+// Geração interna, edição e envio controlado exclusivamente pelo colaborador
+// -------------------------------------------------------------
+app.get('/api/clientes/:id/minuta-contrato', (req, res) => {
+  try {
+    const { id } = req.params;
+    const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(id);
+    if (!cliente) return res.status(404).json({ error: 'Cliente não encontrado.' });
+    const ficha = db.prepare('SELECT * FROM ficha_abertura WHERE cliente_id = ?').get(id);
+    if (!ficha) return res.status(404).json({ error: 'Ficha de abertura não encontrada.' });
+    const socios = db.prepare('SELECT * FROM socios_abertura WHERE ficha_id = ? ORDER BY ordem ASC').all(ficha.id);
+
+    let minuta = ficha.minuta_contrato;
+    if (!minuta || minuta.trim() === '') {
+      minuta = gerarMinutaContratoSocial(cliente, ficha, socios);
+    }
+
+    res.json({
+      minuta,
+      minuta_enviada: ficha.minuta_enviada || 0,
+      data_minuta_enviada: ficha.data_minuta_enviada,
+      minuta_aprovada_cliente: ficha.minuta_aprovada_cliente || 0,
+      data_minuta_aprovada: ficha.data_minuta_aprovada,
+      token: ficha.token_coleta,
+      cliente,
+      ficha
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/clientes/:id/minuta-contrato', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    const { id } = req.params;
+    const { minuta_contrato } = req.body;
+    db.prepare(`
+      UPDATE ficha_abertura
+      SET minuta_contrato = ?, minuta_gerada_em = CURRENT_TIMESTAMP
+      WHERE cliente_id = ?
+    `).run(minuta_contrato, id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/clientes/:id/minuta-contrato/indicar-envio', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    const { id } = req.params;
+    const ficha = db.prepare('SELECT * FROM ficha_abertura WHERE cliente_id = ?').get(id);
+    if (!ficha) return res.status(404).json({ error: 'Ficha não encontrada.' });
+
+    db.prepare(`
+      UPDATE ficha_abertura
+      SET minuta_enviada = 1, data_minuta_enviada = CURRENT_TIMESTAMP
+      WHERE cliente_id = ?
+    `).run(id);
+
+    const usuarioNome = auth?.nome || 'Colaborador';
+    registrarHistorico(id, auth?.id || null, usuarioNome, 'ENVIO_MINUTA_CONTRATO', 'Colaborador gerou o link e indicou o envio da minuta do Contrato Social ao cliente.');
+
+    res.json({ success: true, token: ficha.token_coleta });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Visualização pública da minuta pelo cliente via link compartilhado pelo colaborador
+app.get('/api/coleta-externa/:token/minuta', (req, res) => {
+  try {
+    const { token } = req.params;
+    const ficha = buscarFichaPorToken(token);
+    if (!ficha) return res.status(404).json({ error: 'Ficha não encontrada ou link expirado.' });
+    const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(ficha.cliente_id);
+    const socios = db.prepare('SELECT * FROM socios_abertura WHERE ficha_id = ? ORDER BY ordem ASC').all(ficha.id);
+
+    let minuta = ficha.minuta_contrato;
+    if (!minuta || minuta.trim() === '') {
+      minuta = gerarMinutaContratoSocial(cliente, ficha, socios);
+    }
+
+    res.json({
+      razao_social: ficha.razao_social_op1 || cliente.razao_social,
+      nome_fantasia: ficha.nome_fantasia || cliente.nome_fantasia,
+      minuta,
+      minuta_enviada: ficha.minuta_enviada,
+      minuta_aprovada: ficha.minuta_aprovada_cliente,
+      data_minuta_aprovada: ficha.data_minuta_aprovada,
+      token
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Aprovação da minuta pelo cliente
+app.post('/api/coleta-externa/:token/minuta/aprovar', (req, res) => {
+  try {
+    const { token } = req.params;
+    const ficha = buscarFichaPorToken(token);
+    if (!ficha) return res.status(404).json({ error: 'Ficha não encontrada.' });
+
+    db.prepare(`
+      UPDATE ficha_abertura
+      SET minuta_aprovada_cliente = 1, data_minuta_aprovada = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(ficha.id);
+
+    registrarHistorico(ficha.cliente_id, null, 'Cliente (Via Link Minuta)', 'APROVACAO_MINUTA', 'O cliente revisou e confirmou a aprovação da minuta do Contrato Social.');
+
+    res.json({ success: true, message: 'Minuta aprovada com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Linha do tempo / Rastreio público do processo para o cliente
+app.get('/api/coleta-externa/:token/rastreio', (req, res) => {
+  try {
+    const { token } = req.params;
+    const ficha = buscarFichaPorToken(token);
+    if (!ficha) return res.status(404).json({ error: 'Processo não encontrado.' });
+    const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(ficha.cliente_id);
+
+    res.json({
+      razao_social: ficha.razao_social_op1 || cliente.razao_social,
+      nome_fantasia: ficha.nome_fantasia || cliente.nome_fantasia,
+      natureza_juridica: ficha.natureza_juridica || 'LTDA',
+      status_viabilidade: ficha.status_viabilidade || 'PENDENTE',
+      protocolo_viabilidade: ficha.protocolo_viabilidade,
+      protocolo_dbe: ficha.protocolo_dbe,
+      protocolo_junta: ficha.protocolo_junta,
+      cnpj_gerado: ficha.cnpj_gerado,
+      status_alvara: ficha.status_alvara,
+      formulario_respondido: cliente.formulario_respondido,
+      data_formulario_respondido: cliente.data_formulario_respondido,
+      minuta_enviada: ficha.minuta_enviada,
+      minuta_aprovada_cliente: ficha.minuta_aprovada_cliente,
+      data_inicio: cliente.data_inicio
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

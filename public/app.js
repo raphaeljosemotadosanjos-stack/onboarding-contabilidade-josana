@@ -105,6 +105,36 @@ function extrairTokenColeta() {
   return tokenQuery || tokenHash || tokenPath;
 }
 
+function extrairTokenMinuta() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tokenQuery = urlParams.get('minuta');
+  let tokenHash = null;
+  if (window.location.hash.startsWith('#minuta=')) {
+    tokenHash = window.location.hash.replace('#minuta=', '').trim();
+  }
+  let tokenPath = null;
+  const matchPath = window.location.pathname.match(/\/minuta\/([^/?#]+)/i);
+  if (matchPath) {
+    tokenPath = decodeURIComponent(matchPath[1]);
+  }
+  return tokenQuery || tokenHash || tokenPath;
+}
+
+function extrairTokenRastreio() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tokenQuery = urlParams.get('rastreio');
+  let tokenHash = null;
+  if (window.location.hash.startsWith('#rastreio=')) {
+    tokenHash = window.location.hash.replace('#rastreio=', '').trim();
+  }
+  let tokenPath = null;
+  const matchPath = window.location.pathname.match(/\/rastreio\/([^/?#]+)/i);
+  if (matchPath) {
+    tokenPath = decodeURIComponent(matchPath[1]);
+  }
+  return tokenQuery || tokenHash || tokenPath;
+}
+
 function extrairTokenSenha() {
   const urlParams = new URLSearchParams(window.location.search);
   const tokenQuery = urlParams.get('definir-senha') || urlParams.get('token');
@@ -129,14 +159,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // 2. Se for link de ativação / definição de senha (#definir-senha=TOKEN)
+  // 2. Se for link de minuta do contrato (#minuta=TOKEN ou ?minuta=TOKEN)
+  const tokenMinuta = extrairTokenMinuta();
+  if (tokenMinuta) {
+    iniciarVisualizacaoMinutaCliente(tokenMinuta);
+    return;
+  }
+
+  // 3. Se for link de rastreio do processo (#rastreio=TOKEN ou ?rastreio=TOKEN)
+  const tokenRastreio = extrairTokenRastreio();
+  if (tokenRastreio) {
+    iniciarVisualizacaoRastreioCliente(tokenRastreio);
+    return;
+  }
+
+  // 4. Se for link de ativação / definição de senha (#definir-senha=TOKEN)
   const tokenSenha = extrairTokenSenha();
   if (tokenSenha) {
     iniciarTelaDefinirSenha(tokenSenha);
     return;
   }
 
-  // 3. Se for acesso ao sistema corporativo, carrega configurações e colaboradores
+  // 5. Se for acesso ao sistema corporativo, carrega configurações e colaboradores
   await carregarConfiguracoes();
   await carregarColaboradores();
   inicializarUsuarioLogado();
@@ -147,6 +191,16 @@ window.addEventListener('hashchange', () => {
   const tokenColeta = extrairTokenColeta();
   if (tokenColeta) {
     iniciarVisualizacaoColetaExterna(tokenColeta);
+    return;
+  }
+  const tokenMinuta = extrairTokenMinuta();
+  if (tokenMinuta) {
+    iniciarVisualizacaoMinutaCliente(tokenMinuta);
+    return;
+  }
+  const tokenRastreio = extrairTokenRastreio();
+  if (tokenRastreio) {
+    iniciarVisualizacaoRastreioCliente(tokenRastreio);
     return;
   }
   const tokenSenha = extrairTokenSenha();
@@ -1161,6 +1215,10 @@ function navegarPara(tela, param = null) {
     titulo.textContent = 'Manual do Sistema & Suporte IA';
     subtitulo.textContent = 'Guia oficial passo a passo e assistente inteligente';
     renderManualAjuda(container);
+  } else if (tela === 'modelos-checklist') {
+    titulo.textContent = 'Modelos de Checklist (Mestre)';
+    subtitulo.textContent = 'Personalização de etapas e tarefas para os próximos processos de clientes';
+    renderModelosChecklist(container);
   }
 
   lucide.createIcons();
@@ -2232,6 +2290,8 @@ async function renderTodosClientes(container) {
           ${clientes.map(c => {
             const pct = c.total_tarefas > 0 ? Math.round((c.tarefas_concluidas / c.total_tarefas) * 100) : 0;
             const formRespondido = c.formulario_respondido === 1 || c.data_formulario_respondido || c.data_envio_cliente;
+            const diasCriacao = c.data_inicio ? (Date.now() - new Date(c.data_inicio).getTime()) / (1000 * 3600 * 24) : 0;
+            const pendenteMais48h = c.tipo_empresa === 'EM_CONSTITUICAO' && !formRespondido && diasCriacao > 2;
             return `
               <div onclick="verDetalhesCliente('${c.id}')" class="cliente-item-card bg-white p-4 rounded-xl border ${formRespondido ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-slate-200 hover:border-sky-500'} shadow-sm hover:shadow-md cursor-pointer transition space-y-3" data-nome="${c.razao_social.toLowerCase()}" data-tipo="${c.tipo_empresa}">
                 <div class="flex items-start justify-between">
@@ -2244,6 +2304,12 @@ async function renderTodosClientes(container) {
                         <span class="inline-flex items-center space-x-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
                           <i data-lucide="check-check" class="w-3 h-3 text-emerald-600"></i>
                           <span>Formulário Respondido</span>
+                        </span>
+                      ` : ''}
+                      ${pendenteMais48h ? `
+                        <span class="inline-flex items-center space-x-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                          <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i>
+                          <span>Aguardando Envio (+48h)</span>
                         </span>
                       ` : ''}
                     </div>
@@ -2888,6 +2954,16 @@ async function renderClienteDetalhes(container, clienteId) {
               <button onclick="abrirModalFichaAbertura('${cliente.id}')" class="inline-flex items-center space-x-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-sm transition active:scale-95">
                 <i data-lucide="file-signature" class="w-4 h-4"></i>
                 <span>📑 Ficha Societária & Abertura</span>
+              </button>
+
+              <button onclick="abrirModalMinutaContrato('${cliente.id}')" class="inline-flex items-center space-x-1.5 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-xs font-bold transition">
+                <i data-lucide="scroll-text" class="w-4 h-4 text-purple-600"></i>
+                <span>📜 Minuta do Contrato</span>
+              </button>
+
+              <button onclick="copiarLinkRastreioCliente('${cliente.id}')" class="inline-flex items-center space-x-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-lg text-xs font-bold transition">
+                <i data-lucide="compass" class="w-4 h-4 text-indigo-600"></i>
+                <span>🔗 Rastreio do Cliente</span>
               </button>
               ` : `
               <button onclick="abrirModalFichaAbertura('${cliente.id}')" class="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition">
@@ -4496,6 +4572,24 @@ function formatarValorExibicaoBRL(val) {
   });
 }
 
+function validarCPF(cpf) {
+  if (!cpf) return false;
+  const limpo = String(cpf).replace(/\D/g, '');
+  if (limpo.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(limpo)) return false; // Elimina sequências como 111.111.111-11
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(limpo.charAt(i)) * (10 - i);
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(limpo.charAt(9))) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(limpo.charAt(i)) * (11 - i);
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(limpo.charAt(10))) return false;
+  return true;
+}
+
 function formatarCpfInput(input) {
   if (!input) return;
   let v = input.value.replace(/\D/g, '');
@@ -4508,6 +4602,23 @@ function formatarCpfInput(input) {
     input.value = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
   } else {
     input.value = v;
+  }
+
+  // Validação dos 11 dígitos com feedback instantâneo
+  if (v.length === 11) {
+    const valido = validarCPF(v);
+    if (valido) {
+      input.classList.remove('border-rose-400', 'bg-rose-50/40', 'text-rose-900');
+      input.classList.add('border-emerald-500', 'bg-emerald-50/20');
+      input.setCustomValidity('');
+    } else {
+      input.classList.remove('border-emerald-500', 'bg-emerald-50/20');
+      input.classList.add('border-rose-400', 'bg-rose-50/40', 'text-rose-900');
+      input.setCustomValidity('CPF inválido. Por favor, confira os números digitados.');
+    }
+  } else {
+    input.classList.remove('border-emerald-500', 'bg-emerald-50/20', 'border-rose-400', 'bg-rose-50/40', 'text-rose-900');
+    input.setCustomValidity('');
   }
 }
 
@@ -6331,6 +6442,17 @@ async function enviarColetaCompletaCliente(event, token) {
     return;
   }
 
+  // Validação matemática de todos os CPFs preenchidos
+  for (let idx = 0; idx < sociosClienteForm.length; idx++) {
+    const elCpf = document.getElementById(`cli-soc-cpf-${idx}`);
+    const cpfVal = elCpf?.value?.trim() || '';
+    if (!validarCPF(cpfVal)) {
+      alert(`O CPF do ${idx === 0 ? 'Sócio Administrador' : `Sócio 0${idx + 1}`} (${cpfVal || 'em branco'}) é inválido. Por favor, verifique os 11 dígitos.`);
+      elCpf?.focus();
+      return;
+    }
+  }
+
   const btn = document.getElementById('btn-submit-coleta');
   btn.disabled = true;
   btn.innerHTML = `<span class="inline-block animate-spin mr-2">⟳</span> Enviando dados e arquivos...`;
@@ -6868,4 +6990,660 @@ async function enviarMensagemChatIAEmAba(event) {
   if (!texto) return;
   input.value = '';
   await processarEnvioMensagemChat(texto, 'chat-ia-pagina-mensagens', null);
+}
+
+// =========================================================================
+// MÓDULO: GESTÃO DA MINUTA DO CONTRATO SOCIAL & ENVIO CONTROLADO
+// =========================================================================
+
+async function abrirModalMinutaContrato(clienteId = null) {
+  const cId = clienteId || estado.clienteAtivoId;
+  if (!cId) {
+    mostrarToast('Selecione uma empresa para visualizar a minuta.', 'erro');
+    return;
+  }
+  estado.clienteAtivoId = cId;
+  const modal = document.getElementById('modal-minuta-contrato');
+  if (!modal) return;
+
+  try {
+    const res = await fetch(`/api/clientes/${cId}/minuta-contrato`);
+    if (!res.ok) throw new Error('Falha ao carregar a minuta do contrato social.');
+    const dados = await res.json();
+    estado.minutaAtiva = dados;
+
+    const elEmpresa = document.getElementById('minuta-modal-empresa');
+    if (elEmpresa) {
+      elEmpresa.textContent = `Minuta do Contrato Social — ${dados.cliente?.razao_social || 'Empresa'}`;
+    }
+    const elTexto = document.getElementById('txt-minuta-conteudo');
+    if (elTexto) {
+      elTexto.value = dados.minuta || '';
+    }
+
+    // Configurar o painel de status do envio
+    const boxStatus = document.getElementById('box-status-minuta');
+    const txtTitulo = document.getElementById('txt-status-minuta-titulo');
+    const txtSub = document.getElementById('txt-status-minuta-subtitulo');
+    const icone = document.getElementById('badge-status-minuta-icone');
+
+    if (dados.minuta_aprovada_cliente) {
+      boxStatus.className = 'p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-emerald-50 border-emerald-300';
+      icone.className = 'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-emerald-600 text-white';
+      icone.innerHTML = '✓';
+      txtTitulo.textContent = 'Minuta Aprovada pelo Cliente!';
+      const dt = dados.data_minuta_aprovada ? new Date(dados.data_minuta_aprovada).toLocaleString('pt-BR') : '';
+      txtSub.textContent = `O cliente confirmou a leitura e aprovou todos os termos do contrato em ${dt}.`;
+    } else if (dados.minuta_enviada) {
+      boxStatus.className = 'p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-amber-50 border-amber-300';
+      icone.className = 'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-amber-500 text-white';
+      icone.innerHTML = '⏳';
+      txtTitulo.textContent = 'Link Enviado — Aguardando Aprovação do Cliente';
+      const dt = dados.data_minuta_enviada ? new Date(dados.data_minuta_enviada).toLocaleString('pt-BR') : '';
+      txtSub.textContent = `O colaborador indicou o envio da minuta em ${dt}. O cliente pode revisar pelo link.`;
+    } else {
+      boxStatus.className = 'p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-slate-50 border-slate-200';
+      icone.className = 'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-purple-100 text-purple-700';
+      icone.innerHTML = '📜';
+      txtTitulo.textContent = 'Minuta Gerada Internamente (Não enviada ao cliente)';
+      txtSub.textContent = 'Revise o texto abaixo. Quando estiver tudo certo, clique em "Enviar Link via WhatsApp".';
+    }
+
+    modal.classList.remove('hidden');
+    lucide.createIcons();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function fecharModalMinutaContrato() {
+  const modal = document.getElementById('modal-minuta-contrato');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function salvarMinutaEditada() {
+  const cId = estado.clienteAtivoId;
+  const texto = document.getElementById('txt-minuta-conteudo')?.value;
+  if (!cId || !texto) return;
+
+  try {
+    const res = await fetch(`/api/clientes/${cId}/minuta-contrato`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ minuta_contrato: texto })
+    });
+    if (!res.ok) throw new Error('Erro ao salvar alterações da minuta.');
+    mostrarToast('Alterações da minuta salvas com sucesso!', 'sucesso');
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function copiarTextoMinuta() {
+  const el = document.getElementById('txt-minuta-conteudo');
+  if (!el || !el.value) return;
+  el.select();
+  navigator.clipboard.writeText(el.value);
+  mostrarToast('Texto completo da minuta copiado para a área de transferência!', 'sucesso');
+}
+
+function imprimirMinutaContrato() {
+  const el = document.getElementById('txt-minuta-conteudo');
+  if (!el || !el.value) return;
+  const janela = window.open('', '_blank');
+  janela.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Minuta do Contrato Social</title>
+      <style>
+        body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.6; margin: 40px; color: #111; }
+        pre { font-family: inherit; white-space: pre-wrap; word-wrap: break-word; }
+        @media print { body { margin: 20mm; } }
+      </style>
+    </head>
+    <body>
+      <pre>${el.value}</pre>
+      <script>window.print();<\/script>
+    </body>
+    </html>
+  `);
+  janela.document.close();
+}
+
+async function indicarEnvioMinutaWhatsApp() {
+  const cId = estado.clienteAtivoId;
+  const dados = estado.minutaAtiva;
+  if (!cId || !dados) return;
+
+  const confirmar = confirm('Deseja indicar o envio desta minuta ao cliente e abrir o WhatsApp com o link de conferência?');
+  if (!confirmar) return;
+
+  try {
+    await salvarMinutaEditada();
+
+    const res = await fetch(`/api/clientes/${cId}/minuta-contrato/indicar-envio`, {
+      method: 'POST'
+    });
+    if (!res.ok) throw new Error('Erro ao registrar indicação de envio.');
+
+    const token = dados.token;
+    const urlMinuta = `${window.location.origin}/minuta/${token}`;
+
+    const tel = (dados.cliente?.contato_telefone || '').replace(/\D/g, '');
+    const nome = dados.cliente?.contato_nome || 'Cliente';
+    const empresa = dados.cliente?.razao_social || 'sua empresa';
+
+    const msg = encodeURIComponent(
+      `Olá ${nome}, tudo bem?\n\nA equipe da Josana Mota Contabilidade preparou a minuta do Contrato Social da ${empresa}!\n\nVocê pode conferir o documento completo no link abaixo:\n${urlMinuta}\n\nPor favor, revise os dados dos sócios, endereço e capital. Caso concorde com todos os termos, você pode confirmar diretamente no link ou nos avisar por aqui para darmos entrada no registro!\n\nAtenciosamente,\nJosana Mota Contabilidade`
+    );
+
+    const waUrl = tel ? `https://wa.me/55${tel}?text=${msg}` : `https://wa.me/?text=${msg}`;
+    window.open(waUrl, '_blank');
+
+    mostrarToast('Indicação de envio registrada! WhatsApp aberto.', 'sucesso');
+    abrirModalMinutaContrato(cId);
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function copiarLinkRastreioCliente(clienteId = null) {
+  const token = estado.fichaAtiva?.token_coleta || estado.clienteDetalhes?.ficha?.token_coleta || estado.minutaAtiva?.token;
+  if (!token) {
+    mostrarToast('Token do processo não localizado.', 'erro');
+    return;
+  }
+  const urlRastreio = `${window.location.origin}/rastreio/${token}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(urlRastreio);
+  }
+  mostrarToast('Link de rastreio copiado para a área de transferência!', 'sucesso');
+
+  const tel = (estado.clienteDetalhes?.cliente?.contato_telefone || '').replace(/\D/g, '');
+  const nome = estado.clienteDetalhes?.cliente?.contato_nome || 'Cliente';
+  const msg = encodeURIComponent(
+    `Olá ${nome}, você pode acompanhar o status em tempo real do processo de abertura da sua empresa através do nosso link de rastreio:\n${urlRastreio}\n\nJosana Mota Contabilidade`
+  );
+  if (confirm('Link copiado! Deseja abrir o WhatsApp para enviar o link de rastreio ao cliente agora?')) {
+    window.open(tel ? `https://wa.me/55${tel}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
+  }
+}
+
+// =========================================================================
+// TELAS PÚBLICAS DO CLIENTE (MINUTA DO CONTRATO E RASTREIO DO PROCESSO)
+// =========================================================================
+
+async function iniciarVisualizacaoMinutaCliente(token) {
+  document.body.innerHTML = `
+    <div class="min-h-screen bg-slate-100 text-slate-800 flex flex-col justify-between font-sans">
+      <header class="bg-white border-b border-slate-200 py-4 px-6 flex items-center justify-between shadow-2xs sticky top-0 z-20">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-white border border-[#EDEDEB] p-1 flex items-center justify-center shadow-2xs">
+            <img src="/logo-monograma.png" alt="JM" class="max-h-full max-w-full object-contain">
+          </div>
+          <div>
+            <h1 class="font-extrabold text-[#0A213D] text-sm uppercase tracking-wider leading-tight">Josana Mota Contabilidade</h1>
+            <p class="text-[11px] text-[#C5A059] font-bold">Minuta de Contrato Social & Constituição</p>
+          </div>
+        </div>
+        <span class="text-xs px-3 py-1 bg-purple-50 text-purple-800 rounded-full font-bold border border-purple-200">Protocolo: ${token}</span>
+      </header>
+
+      <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 my-6">
+        <div id="minuta-cliente-loading" class="text-center py-12 space-y-3">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p class="text-xs text-slate-500">Carregando minuta do documento...</p>
+        </div>
+
+        <div id="minuta-cliente-conteudo" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
+          <div class="border-b border-slate-200 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-2xl font-black text-slate-900 tracking-tight" id="cli-minuta-razao">Contrato Social</h2>
+              <p class="text-xs text-slate-600 mt-1">
+                Por favor, revise atentamente a qualificação dos sócios, endereço e capital social da empresa.
+              </p>
+            </div>
+            <button onclick="window.print()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl border border-slate-300 text-xs flex items-center space-x-1.5 self-start sm:self-auto transition">
+              <i data-lucide="printer" class="w-4 h-4 text-purple-600"></i>
+              <span>Imprimir / Salvar PDF</span>
+            </button>
+          </div>
+
+          <div id="box-aprovacao-banner"></div>
+
+          <div class="p-5 sm:p-6 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-serif leading-relaxed text-slate-800 whitespace-pre-wrap select-text shadow-inner" id="cli-minuta-texto"></div>
+
+          <div id="box-botoes-aprovacao" class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span class="text-xs text-slate-500">Josana Mota Contabilidade • Assessoria Empresarial & Societária</span>
+            <button id="btn-aprovar-minuta" onclick="aprovarMinutaCliente('${token}')" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-2">
+              <i data-lucide="check-check" class="w-4 h-4"></i>
+              <span>✓ Li e Concordo com os Termos da Minuta</span>
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <footer class="bg-white border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500">
+        © ${new Date().getFullYear()} Josana Mota Contabilidade • Todos os direitos reservados.
+      </footer>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`/api/coleta-externa/${token}/minuta`);
+    if (!res.ok) throw new Error('Minuta não encontrada ou expirada.');
+    const data = await res.json();
+
+    document.getElementById('cli-minuta-razao').textContent = data.razao_social || 'Contrato Social';
+    document.getElementById('cli-minuta-texto').textContent = data.minuta || '';
+
+    const banner = document.getElementById('box-aprovacao-banner');
+    const btnAprovar = document.getElementById('btn-aprovar-minuta');
+
+    if (data.minuta_aprovada) {
+      const dt = data.data_minuta_aprovada ? new Date(data.data_minuta_aprovada).toLocaleString('pt-BR') : '';
+      banner.innerHTML = `
+        <div class="bg-emerald-50 border border-emerald-300 rounded-xl p-4 flex items-center space-x-3 text-xs text-emerald-950">
+          <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">✓</span>
+          <div>
+            <p class="font-bold text-emerald-900">Minuta aprovada com sucesso!</p>
+            <p class="text-[11px] text-emerald-700">Você confirmou a leitura e aprovação deste documento em ${dt}. Nossa equipe já está dando prosseguimento com o registro!</p>
+          </div>
+        </div>
+      `;
+      if (btnAprovar) btnAprovar.classList.add('hidden');
+    }
+
+    document.getElementById('minuta-cliente-loading').classList.add('hidden');
+    document.getElementById('minuta-cliente-conteudo').classList.remove('hidden');
+    lucide.createIcons();
+  } catch (err) {
+    document.getElementById('minuta-cliente-loading').innerHTML = `
+      <div class="text-rose-600 font-bold">${err.message}</div>
+      <p class="text-xs text-slate-500 mt-2">Por favor, solicite o link atualizado ao seu escritório contábil.</p>
+    `;
+  }
+}
+
+async function aprovarMinutaCliente(token) {
+  const confirmar = confirm('Confirma que revisou os dados dos sócios, endereço e capital e aprova a minuta para registro?');
+  if (!confirmar) return;
+
+  const btn = document.getElementById('btn-aprovar-minuta');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="inline-block animate-spin mr-1">⟳</span> Confirmando aprovação...`;
+  }
+
+  try {
+    const res = await fetch(`/api/coleta-externa/${token}/minuta/aprovar`, {
+      method: 'POST'
+    });
+    if (!res.ok) throw new Error('Erro ao confirmar aprovação da minuta.');
+    alert('Minuta aprovada com sucesso! O escritório de contabilidade foi notificado e já iniciará os procedimentos de registro.');
+    iniciarVisualizacaoMinutaCliente(token);
+  } catch (err) {
+    alert(err.message);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="check-check" class="w-4 h-4"></i><span>✓ Li e Concordo com os Termos da Minuta</span>`;
+      lucide.createIcons();
+    }
+  }
+}
+
+async function iniciarVisualizacaoRastreioCliente(token) {
+  document.body.innerHTML = `
+    <div class="min-h-screen bg-slate-100 text-slate-800 flex flex-col justify-between font-sans">
+      <header class="bg-white border-b border-slate-200 py-4 px-6 flex items-center justify-between shadow-2xs sticky top-0 z-20">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-white border border-[#EDEDEB] p-1 flex items-center justify-center shadow-2xs">
+            <img src="/logo-monograma.png" alt="JM" class="max-h-full max-w-full object-contain">
+          </div>
+          <div>
+            <h1 class="font-extrabold text-[#0A213D] text-sm uppercase tracking-wider leading-tight">Josana Mota Contabilidade</h1>
+            <p class="text-[11px] text-[#C5A059] font-bold">Acompanhamento de Abertura Empresarial</p>
+          </div>
+        </div>
+        <span class="text-xs px-3 py-1 bg-sky-50 text-sky-800 rounded-full font-bold border border-sky-200">Protocolo: ${token}</span>
+      </header>
+
+      <main class="flex-1 max-w-3xl w-full mx-auto p-4 sm:p-6 my-6">
+        <div id="rastreio-loading" class="text-center py-12 space-y-3">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mx-auto"></div>
+          <p class="text-xs text-slate-500">Consultando status do processo em tempo real...</p>
+        </div>
+
+        <div id="rastreio-conteudo" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
+          <div class="border-b border-slate-100 pb-4">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 uppercase tracking-wider">Processo em Andamento</span>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1" id="rastreio-razao">Empresa</h2>
+            <p class="text-xs text-slate-600 mt-0.5">Veja em qual etapa está a abertura e formalização da sua empresa:</p>
+          </div>
+
+          <!-- TIMELINE DAS 5 ETAPAS -->
+          <div class="space-y-4 pt-2" id="timeline-etapas-cliente"></div>
+
+          <!-- CANAL DE ATENDIMENTO -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div>
+              <p class="font-bold text-slate-900">Dúvidas sobre o processo?</p>
+              <p class="text-slate-500 text-[11px]">Nossa equipe está à disposição para te auxiliar em todas as etapas.</p>
+            </div>
+            <a href="https://wa.me/5511988881000" target="_blank" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition text-xs shadow-sm flex items-center justify-center space-x-1.5 self-start sm:self-auto">
+              <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+              <span>Falar com o Escritório</span>
+            </a>
+          </div>
+        </div>
+      </main>
+
+      <footer class="bg-white border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500">
+        © ${new Date().getFullYear()} Josana Mota Contabilidade • Assessoria Contábil e Societária
+      </footer>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`/api/coleta-externa/${token}/rastreio`);
+    if (!res.ok) throw new Error('Processo de abertura não encontrado.');
+    const d = await res.json();
+
+    document.getElementById('rastreio-razao').textContent = d.razao_social || 'Empresa em Constituição';
+
+    const etapas = [
+      {
+        num: 1,
+        titulo: 'Coleta de Documentos & Informações',
+        sub: d.formulario_respondido ? 'Informações e documentos societários recebidos com sucesso ✓' : 'Aguardando preenchimento do formulário pelo cliente',
+        status: d.formulario_respondido ? 'CONCLUIDO' : 'EM_ANDAMENTO'
+      },
+      {
+        num: 2,
+        titulo: 'Consulta de Viabilidade & Nome Empresarial',
+        sub: d.status_viabilidade === 'APROVADO' ? `Viabilidade deferida na Junta Comercial! (Protocolo: ${d.protocolo_viabilidade || 'OK'})` : d.protocolo_viabilidade ? `Protocolo sob análise: ${d.protocolo_viabilidade}` : 'Análise de viabilidade de nome e localização em preparação',
+        status: d.status_viabilidade === 'APROVADO' ? 'CONCLUIDO' : (d.protocolo_viabilidade ? 'EM_ANDAMENTO' : 'PENDENTE')
+      },
+      {
+        num: 3,
+        titulo: 'Documento Básico de Entrada (DBE) - Receita Federal',
+        sub: d.protocolo_dbe ? `DBE gerado e sob análise: ${d.protocolo_dbe}` : 'Elaboração do DBE cadastral da Receita Federal',
+        status: d.protocolo_dbe ? 'CONCLUIDO' : (d.status_viabilidade === 'APROVADO' ? 'EM_ANDAMENTO' : 'PENDENTE')
+      },
+      {
+        num: 4,
+        titulo: 'Registro do Ato Constitutivo na Junta Comercial',
+        sub: d.protocolo_junta ? `Protocolo na Junta Comercial: ${d.protocolo_junta}` : (d.minuta_aprovada_cliente ? 'Minuta aprovada, preparando dossiê da Junta' : 'Elaboração e conferência do Contrato Social'),
+        status: d.protocolo_junta ? 'CONCLUIDO' : (d.protocolo_dbe ? 'EM_ANDAMENTO' : 'PENDENTE')
+      },
+      {
+        num: 5,
+        titulo: 'Emissão do CNPJ, Inscrições e Alvarás',
+        sub: d.cnpj_gerado ? `CNPJ Oficial emitido: ${d.cnpj_gerado} (Alvará: ${d.status_alvara || 'Liberado'})` : 'Emissão do cartão CNPJ, inscrições municipal/estadual e licenças',
+        status: d.cnpj_gerado ? 'CONCLUIDO' : (d.protocolo_junta ? 'EM_ANDAMENTO' : 'PENDENTE')
+      }
+    ];
+
+    const timelineHtml = etapas.map((e, idx) => {
+      let corBg = 'bg-slate-100 text-slate-500 border-slate-300';
+      let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">Aguardando</span>`;
+
+      if (e.status === 'CONCLUIDO') {
+        corBg = 'bg-emerald-600 text-white border-emerald-600';
+        statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">✓ Concluído</span>`;
+      } else if (e.status === 'EM_ANDAMENTO') {
+        corBg = 'bg-sky-600 text-white border-sky-600 animate-pulse';
+        statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-300">Em Execução</span>`;
+      }
+
+      return `
+        <div class="flex items-start space-x-3.5 relative">
+          ${idx < etapas.length - 1 ? `<div class="absolute left-4 top-8 bottom-0 w-0.5 ${e.status === 'CONCLUIDO' ? 'bg-emerald-500' : 'bg-slate-200'}"></div>` : ''}
+          <div class="w-8 h-8 rounded-full border-2 ${corBg} flex items-center justify-center font-bold text-xs flex-shrink-0 z-10">
+            ${e.status === 'CONCLUIDO' ? '✓' : e.num}
+          </div>
+          <div class="flex-1 pb-5">
+            <div class="flex flex-wrap items-center justify-between gap-1 mb-0.5">
+              <h4 class="font-bold text-sm text-slate-900">${e.titulo}</h4>
+              ${statusBadge}
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">${e.sub}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('timeline-etapas-cliente').innerHTML = timelineHtml;
+    document.getElementById('rastreio-loading').classList.add('hidden');
+    document.getElementById('rastreio-conteudo').classList.remove('hidden');
+    lucide.createIcons();
+  } catch (err) {
+    document.getElementById('rastreio-loading').innerHTML = `
+      <div class="text-rose-600 font-bold">${err.message}</div>
+      <p class="text-xs text-slate-500 mt-2">Por favor, solicite o link atualizado ao seu escritório contábil.</p>
+    `;
+  }
+}
+
+// =========================================================================
+// MÓDULO: GERENCIADOR DE MODELOS DE CHECKLIST (GESTOR & ONBOARDING)
+// Permite alterar etapas e tarefas para os próximos processos sem afetar os atuais
+// =========================================================================
+
+async function renderModelosChecklist(container) {
+  container.innerHTML = `<div class="flex items-center justify-center p-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div></div>`;
+
+  const usuario = estado.usuarioLogado;
+  const ehGestorOuCoord = usuario && (usuario.perfil === 'GESTOR' || usuario.perfil === 'ONBOARDING');
+
+  try {
+    const res = await fetch('/api/checklist-templates');
+    if (!res.ok) throw new Error('Erro ao carregar modelos de checklist.');
+    const templates = await res.json();
+    window._templatesAtivos = templates;
+
+    const modulosNomes = {
+      'CONSTITUICAO': 'Módulo Abertura / Constituição (Etapa 0)',
+      'MODULO_A_GERAL': 'Módulo A - Geral & Implantação (Etapas 1 a 7)',
+      'MODULO_B_PARALEGAL': 'Módulo B - Paralegal & Societário',
+      'MODULO_C_FISCAL': 'Módulo C - Fiscal & Tributário',
+      'MODULO_D_PESSOAL': 'Módulo D - Pessoal & Folha (DP)',
+      'MODULO_E_CONTABIL': 'Módulo E - Contábil & Balanços',
+      'MODULO_F_ESPECIAL': 'Módulo F - Serviços Especializados'
+    };
+
+    window._moduloTemplateAtivo = window._moduloTemplateAtivo || 'MODULO_A_GERAL';
+
+    container.innerHTML = `
+      <div class="space-y-4">
+        <!-- BANNER EXPLICATIVO -->
+        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-300 rounded-2xl p-4 sm:p-5 text-xs text-emerald-950 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <span class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-2xs flex-shrink-0">
+              <i data-lucide="list-checks" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="font-bold text-sm text-emerald-950">Gerenciador de Modelos Mestres do Checklist</h3>
+              <p class="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                As tarefas configuradas aqui definem o checklist padrão copiado para os <strong>PRÓXIMOS clientes</strong> cadastrados.
+                <br>🔒 <strong>Segurança Operacional:</strong> Os processos de onboarding que já estão em andamento permanecem 100% inalterados.
+              </p>
+            </div>
+          </div>
+          ${ehGestorOuCoord ? `
+            <button onclick="abrirModalNovaTarefaTemplate()" class="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition text-xs shadow-sm self-start sm:self-auto active:scale-95">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>+ Adicionar Tarefa ao Modelo</span>
+            </button>
+          ` : `
+            <span class="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px]">
+              🔒 Modo Consulta (Apenas Gestor/Onboarding podem alterar)
+            </span>
+          `}
+        </div>
+
+        <!-- ABAS POR MÓDULO -->
+        <div class="flex space-x-1.5 overflow-x-auto pb-1 border-b border-slate-200">
+          ${Object.entries(modulosNomes).map(([k, label]) => `
+            <button onclick="trocarAbaModuloTemplate('${k}')" class="px-3.5 py-2 rounded-t-xl text-xs font-bold transition whitespace-nowrap ${window._moduloTemplateAtivo === k ? 'bg-white border-t-2 border-emerald-600 text-emerald-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}">
+              ${label}
+            </button>
+          `).join('')}
+        </div>
+
+        <!-- LISTA DE TAREFAS DO MÓDULO ATIVO -->
+        <div id="container-tarefas-template" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3"></div>
+      </div>
+    `;
+
+    renderizarTarefasModuloTemplate();
+    lucide.createIcons();
+  } catch (err) {
+    container.innerHTML = `<div class="p-6 bg-rose-50 text-rose-700 rounded-xl font-bold">Erro: ${err.message}</div>`;
+  }
+}
+
+function trocarAbaModuloTemplate(modKey) {
+  window._moduloTemplateAtivo = modKey;
+  renderModelosChecklist(document.getElementById('view-container'));
+}
+
+function renderizarTarefasModuloTemplate() {
+  const container = document.getElementById('container-tarefas-template');
+  if (!container) return;
+
+  const usuario = estado.usuarioLogado;
+  const ehGestorOuCoord = usuario && (usuario.perfil === 'GESTOR' || usuario.perfil === 'ONBOARDING');
+
+  const modKey = window._moduloTemplateAtivo || 'MODULO_A_GERAL';
+  const tarefas = (window._templatesAtivos || []).filter(t => t.modulo === modKey);
+
+  if (tarefas.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-8 text-slate-400 text-xs">
+        Nenhuma tarefa configurada para este módulo ainda.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 text-xs font-bold text-slate-500">
+      <span>${tarefas.length} tarefas cadastradas neste módulo</span>
+      <span>Ordem / Etapa</span>
+    </div>
+    <div class="space-y-2.5">
+      ${tarefas.map((t, idx) => `
+        <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-emerald-300 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div class="flex items-start space-x-3">
+            <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+              ${idx + 1}
+            </span>
+            <div>
+              <p class="font-bold text-slate-900">${t.titulo}</p>
+              <div class="flex flex-wrap items-center gap-2 mt-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800">
+                  Etapa 0${t.etapa_numero}
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">
+                  ${t.departamento}
+                </span>
+              </div>
+            </div>
+          </div>
+          ${ehGestorOuCoord ? `
+            <div class="flex items-center space-x-2 self-end sm:self-auto">
+              <button onclick="abrirModalEditarTarefaTemplate('${t.id}')" class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-bold text-xs shadow-2xs transition">
+                ✏️ Editar
+              </button>
+              <button onclick="excluirTarefaTemplate('${t.id}')" class="px-2 py-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-lg font-bold text-xs shadow-2xs transition" title="Desativar tarefa">
+                🗑️ Excluir
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+async function abrirModalNovaTarefaTemplate() {
+  const modKey = window._moduloTemplateAtivo || 'MODULO_A_GERAL';
+  const titulo = prompt('Informe o título da nova tarefa do checklist:');
+  if (!titulo || !titulo.trim()) return;
+
+  const dep = prompt('Informe o departamento responsável (IMPLANTACAO, PARALEGAL, FISCAL, PESSOAL, CONTABIL, COMERCIAL ou ESPECIAL):', 'IMPLANTACAO');
+  if (!dep) return;
+
+  const etapa = prompt('Informe o número da etapa (0 a 7):', modKey === 'CONSTITUICAO' ? '0' : '1');
+  if (etapa === null) return;
+
+  try {
+    const res = await fetch('/api/checklist-templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modulo: modKey,
+        titulo: titulo.trim(),
+        departamento: dep.toUpperCase().trim(),
+        etapa_numero: parseInt(etapa) || 1,
+        ordem: (window._templatesAtivos || []).length + 1
+      })
+    });
+    if (!res.ok) throw new Error('Erro ao adicionar tarefa.');
+    mostrarToast('Nova tarefa adicionada ao modelo mestre com sucesso!', 'sucesso');
+    renderModelosChecklist(document.getElementById('view-container'));
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function abrirModalEditarTarefaTemplate(id) {
+  const tarefa = (window._templatesAtivos || []).find(t => t.id === id);
+  if (!tarefa) return;
+
+  const novoTitulo = prompt('Editar título da tarefa:', tarefa.titulo);
+  if (!novoTitulo || !novoTitulo.trim()) return;
+
+  const novoDep = prompt('Editar departamento (IMPLANTACAO, PARALEGAL, FISCAL, PESSOAL, CONTABIL, COMERCIAL ou ESPECIAL):', tarefa.departamento);
+  if (!novoDep) return;
+
+  const novaEtapa = prompt('Editar número da etapa (0 a 7):', tarefa.etapa_numero);
+  if (novaEtapa === null) return;
+
+  try {
+    const res = await fetch(`/api/checklist-templates/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titulo: novoTitulo.trim(),
+        departamento: novoDep.toUpperCase().trim(),
+        etapa_numero: parseInt(novaEtapa) || 0
+      })
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar tarefa.');
+    mostrarToast('Tarefa do modelo atualizada com sucesso!', 'sucesso');
+    renderModelosChecklist(document.getElementById('view-container'));
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function excluirTarefaTemplate(id) {
+  const confirmar = confirm('Tem certeza que deseja excluir esta tarefa do modelo mestre? As próximas empresas cadastradas não receberão mais esta tarefa.');
+  if (!confirmar) return;
+
+  try {
+    const res = await fetch(`/api/checklist-templates/${id}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Erro ao excluir tarefa.');
+    mostrarToast('Tarefa removida do modelo mestre!', 'sucesso');
+    renderModelosChecklist(document.getElementById('view-container'));
+  } catch (err) {
+    alert(err.message);
+  }
 }

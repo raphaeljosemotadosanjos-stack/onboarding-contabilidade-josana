@@ -296,9 +296,30 @@ safeAdd('ficha_abertura', 'data_envio_cliente', 'DATETIME');
 safeAdd('ficha_abertura', 'resp_tecnico_numero', 'TEXT');
 safeAdd('ficha_abertura', 'resp_tecnico_estado', 'TEXT');
 safeAdd('ficha_abertura', 'declaracao_veracidade', 'INTEGER DEFAULT 1');
+safeAdd('ficha_abertura', 'minuta_contrato', 'TEXT');
+safeAdd('ficha_abertura', 'minuta_gerada_em', 'DATETIME');
+safeAdd('ficha_abertura', 'minuta_enviada', 'INTEGER DEFAULT 0');
+safeAdd('ficha_abertura', 'data_minuta_enviada', 'DATETIME');
+safeAdd('ficha_abertura', 'minuta_aprovada_cliente', 'INTEGER DEFAULT 0');
+safeAdd('ficha_abertura', 'data_minuta_aprovada', 'DATETIME');
 safeAdd('clientes', 'formulario_respondido', 'INTEGER DEFAULT 0');
 safeAdd('clientes', 'data_formulario_respondido', 'DATETIME');
 safeAdd('socios_abertura', 'ponto_referencia', 'TEXT');
+
+// Tabela de templates mestre do checklist (editável por Gestor e Onboarding)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS checklist_templates (
+    id TEXT PRIMARY KEY,
+    modulo TEXT NOT NULL,
+    etapa_numero INTEGER NOT NULL,
+    titulo TEXT NOT NULL,
+    departamento TEXT NOT NULL,
+    ordem INTEGER DEFAULT 0,
+    ativo INTEGER DEFAULT 1,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_by TEXT
+  );
+`);
 
 // Inicializar configs padrão
 const configQuery = db.prepare('SELECT valor FROM configuracoes WHERE chave = ?');
@@ -529,11 +550,56 @@ const CHECKLIST_TEMPLATES = {
   ]
 };
 
+// Inicializar checklist_templates a partir de CHECKLIST_TEMPLATES se a tabela estiver vazia
+try {
+  const countTemplates = db.prepare('SELECT COUNT(*) as count FROM checklist_templates').get().count;
+  if (countTemplates === 0) {
+    const insTpl = db.prepare(`
+      INSERT INTO checklist_templates (id, modulo, etapa_numero, titulo, departamento, ordem, ativo)
+      VALUES (?, ?, ?, ?, ?, ?, 1)
+    `);
+    let tplNum = 1;
+    for (const [modKey, lista] of Object.entries(CHECKLIST_TEMPLATES)) {
+      lista.forEach((item, idx) => {
+        insTpl.run(
+          `tpl_${modKey.toLowerCase()}_${tplNum++}`,
+          modKey,
+          item.etapa,
+          item.titulo,
+          item.departamento,
+          idx + 1
+        );
+      });
+    }
+  }
+} catch (e) {
+  console.error('Erro ao inicializar checklist_templates:', e.message);
+}
+
 function popularTarefasOnboarding(clienteId, escopo, tipoEmpresa, squad = {}) {
   const insertTarefa = db.prepare(`
     INSERT INTO tarefas_checklist (id, cliente_id, modulo, etapa_numero, titulo, departamento, status, responsavel, responsavel_colaborador_id, ordem)
     VALUES (?, ?, ?, ?, ?, ?, 'NAO_INICIADO', ?, ?, ?)
   `);
+
+  // Carregar templates dinâmicos do banco (permite alterar futuros sem afetar processos em aberto)
+  const templatesDb = db.prepare('SELECT * FROM checklist_templates WHERE ativo = 1 ORDER BY etapa_numero ASC, ordem ASC, id ASC').all();
+  const moduloMap = {};
+  templatesDb.forEach(t => {
+    if (!moduloMap[t.modulo]) moduloMap[t.modulo] = [];
+    moduloMap[t.modulo].push({
+      etapa: t.etapa_numero,
+      titulo: t.titulo,
+      departamento: t.departamento
+    });
+  });
+
+  function getListaModulo(modNome, fallback) {
+    if (moduloMap[modNome] && moduloMap[modNome].length > 0) {
+      return moduloMap[modNome];
+    }
+    return fallback || [];
+  }
 
   const colaboradores = db.prepare('SELECT id, nome, departamento FROM colaboradores WHERE ativo = 1').all();
   const getColabPorIdOuDep = (colabId, dep) => {
@@ -581,7 +647,7 @@ function popularTarefasOnboarding(clienteId, escopo, tipoEmpresa, squad = {}) {
 
   // Se for empresa em constituição, inicializar Ficha de Abertura e tarefas do Módulo Constituição
   if (tipoEmpresa === 'EM_CONSTITUICAO') {
-    inserirLista('MODULO_CONSTITUICAO', CHECKLIST_TEMPLATES.CONSTITUICAO);
+    inserirLista('MODULO_CONSTITUICAO', getListaModulo('CONSTITUICAO', CHECKLIST_TEMPLATES.CONSTITUICAO));
     
     // Gerar ficha de abertura inicial se não existir
     const existeFicha = db.prepare('SELECT id FROM ficha_abertura WHERE cliente_id = ?').get(clienteId);
@@ -603,13 +669,13 @@ function popularTarefasOnboarding(clienteId, escopo, tipoEmpresa, squad = {}) {
     }
   }
 
-  inserirLista('MODULO_A_GERAL', CHECKLIST_TEMPLATES.MODULO_A_GERAL);
+  inserirLista('MODULO_A_GERAL', getListaModulo('MODULO_A_GERAL', CHECKLIST_TEMPLATES.MODULO_A_GERAL));
 
-  if (escopo.tem_paralegal) inserirLista('MODULO_B_PARALEGAL', CHECKLIST_TEMPLATES.MODULO_B_PARALEGAL);
-  if (escopo.tem_fiscal) inserirLista('MODULO_C_FISCAL', CHECKLIST_TEMPLATES.MODULO_C_FISCAL);
-  if (escopo.tem_pessoal) inserirLista('MODULO_D_PESSOAL', CHECKLIST_TEMPLATES.MODULO_D_PESSOAL);
-  if (escopo.tem_contabil) inserirLista('MODULO_E_CONTABIL', CHECKLIST_TEMPLATES.MODULO_E_CONTABIL);
-  if (escopo.tem_terceiro_setor) inserirLista('MODULO_F_ESPECIAL', CHECKLIST_TEMPLATES.MODULO_F_ESPECIAL);
+  if (escopo.tem_paralegal) inserirLista('MODULO_B_PARALEGAL', getListaModulo('MODULO_B_PARALEGAL', CHECKLIST_TEMPLATES.MODULO_B_PARALEGAL));
+  if (escopo.tem_fiscal) inserirLista('MODULO_C_FISCAL', getListaModulo('MODULO_C_FISCAL', CHECKLIST_TEMPLATES.MODULO_C_FISCAL));
+  if (escopo.tem_pessoal) inserirLista('MODULO_D_PESSOAL', getListaModulo('MODULO_D_PESSOAL', CHECKLIST_TEMPLATES.MODULO_D_PESSOAL));
+  if (escopo.tem_contabil) inserirLista('MODULO_E_CONTABIL', getListaModulo('MODULO_E_CONTABIL', CHECKLIST_TEMPLATES.MODULO_E_CONTABIL));
+  if (escopo.tem_terceiro_setor) inserirLista('MODULO_F_ESPECIAL', getListaModulo('MODULO_F_ESPECIAL', CHECKLIST_TEMPLATES.MODULO_F_ESPECIAL));
 
   const insertComp = db.prepare(`
     INSERT INTO acompanhamento_competencias (id, cliente_id, competencia_numero, mes_ano, status_fiscal, status_pessoal, status_contabil)
