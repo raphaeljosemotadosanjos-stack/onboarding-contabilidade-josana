@@ -1513,6 +1513,134 @@
   </div>
 
   <!-- ======================================================== -->
+  <!-- MODAL: NOVO COMUNICADO NO MURAL DA EQUIPE -->
+  <!-- ======================================================== -->
+  <div id="modal-novo-aviso-mural" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onclick="if(event.target === this) fecharModalNovoAvisoMural()">
+    <div class="bg-white dark:bg-[#202020] rounded-3xl shadow-2xl w-full max-w-lg flex flex-col border border-[#EDEDEB] dark:border-[#333330] overflow-hidden animate-in relative my-auto">
+      
+      <!-- MARCA D'ÁGUA SUTIL NO FUNDO DO POP-UP (MANTÉM O SISTEMA VISÍVEL ATRÁS DO BACKDROP) -->
+      <div class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.03] z-0">
+        <img src="/logo-monograma.png" alt="" class="w-[360px] h-[360px] object-contain select-none">
+      </div>
+
+      <!-- CABEÇALHO PERSONALIZADO JOSANA MOTA -->
+      <div class="px-6 py-4 border-b border-[#EDEDEB] dark:border-[#333330] flex items-center justify-between bg-white dark:bg-[#202020] relative z-10">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl p-1 border border-[#EDEDEB] dark:border-[#333330] flex items-center justify-center bg-white dark:bg-[#191919] shadow-2xs">
+            <img src="/logo-monograma.png" alt="JM" class="max-h-full max-w-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-extrabold text-[#0A213D] dark:text-white text-sm">Publicar no Mural da Equipe</h3>
+            <p class="text-[11px] text-[#787774] dark:text-[#9B9A97]">Josana Mota Contabilidade • Avisos &amp; Alinhamentos</p>
+          </div>
+        </div>
+        <button type="button" onclick="fecharModalNovoAvisoMural()" class="text-[#787774] hover:text-[#0A213D] dark:hover:text-white p-1.5 rounded-lg cursor-pointer transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- FORMULÁRIO UNIFICADO EM UMA JANELA SÓ -->
+      <form onsubmit="submeterNovoAvisoMural(event)" class="p-6 space-y-4 relative z-10">
+        
+        <!-- ETAPA 1: CATEGORIA / TIPO DE COMUNICADO -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-[#0A213D] dark:text-[#DFC48B]">
+            Categoria do Comunicado:
+          </label>
+          <input type="hidden" id="mural-novo-tipo" value="INFO">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <!-- Informativo (Padrão) -->
+            <button type="button" onclick="selecionarTipoAvisoMural('INFO')" id="btn-tipo-mural-INFO" class="tipo-mural-card flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition cursor-pointer border-sky-400 bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-2 ring-sky-400/30 shadow-2xs">
+              <div class="w-8 h-8 rounded-xl bg-sky-100 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 mb-1.5">
+                <i data-lucide="info" class="w-4 h-4"></i>
+              </div>
+              <span class="text-xs font-bold leading-tight">Informativo</span>
+              <span class="text-[10px] text-sky-600 dark:text-sky-400 mt-0.5">Rotina geral</span>
+            </button>
+
+            <!-- Urgente -->
+            <button type="button" onclick="selecionarTipoAvisoMural('URGENTE')" id="btn-tipo-mural-URGENTE" class="tipo-mural-card flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDEDEB] dark:border-[#333330] bg-[#FAFAF9] dark:bg-[#191919] hover:bg-rose-50/60 dark:hover:bg-rose-950/30 text-[#2F3437] dark:text-[#E6E6E5] text-center transition cursor-pointer">
+              <div class="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-900/60 flex items-center justify-center text-rose-700 dark:text-rose-300 mb-1.5">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+              </div>
+              <span class="text-xs font-bold leading-tight">Urgente</span>
+              <span class="text-[10px] text-[#787774] dark:text-[#9B9A97] mt-0.5">Prioridade alta</span>
+            </button>
+
+            <!-- Aviso Importante -->
+            <button type="button" onclick="selecionarTipoAvisoMural('AVISO')" id="btn-tipo-mural-AVISO" class="tipo-mural-card flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDEDEB] dark:border-[#333330] bg-[#FAFAF9] dark:bg-[#191919] hover:bg-amber-50/60 dark:hover:bg-amber-950/30 text-[#2F3437] dark:text-[#E6E6E5] text-center transition cursor-pointer">
+              <div class="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center text-amber-700 dark:text-amber-300 mb-1.5">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+              </div>
+              <span class="text-xs font-bold leading-tight">Importante</span>
+              <span class="text-[10px] text-[#787774] dark:text-[#9B9A97] mt-0.5">Prazos &amp; regras</span>
+            </button>
+
+            <!-- Sistemas / Instabilidade -->
+            <button type="button" onclick="selecionarTipoAvisoMural('SISTEMA')" id="btn-tipo-mural-SISTEMA" class="tipo-mural-card flex flex-col items-center justify-center p-3 rounded-2xl border border-[#EDEDEB] dark:border-[#333330] bg-[#FAFAF9] dark:bg-[#191919] hover:bg-purple-50/60 dark:hover:bg-purple-950/30 text-[#2F3437] dark:text-[#E6E6E5] text-center transition cursor-pointer">
+              <div class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 mb-1.5">
+                <i data-lucide="server" class="w-4 h-4"></i>
+              </div>
+              <span class="text-xs font-bold leading-tight">Sistemas</span>
+              <span class="text-[10px] text-[#787774] dark:text-[#9B9A97] mt-0.5">Instabilidades</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ETAPA 2: TÍTULO DO COMUNICADO (OPCIONAL) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-[#0A213D] dark:text-[#DFC48B]">Título do Comunicado:</label>
+            <span class="text-[10px] text-[#787774] dark:text-[#9B9A97]">Opcional</span>
+          </div>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#787774]">
+              <i data-lucide="tag" class="w-4 h-4"></i>
+            </div>
+            <input type="text" id="mural-novo-titulo" placeholder="Ex: Prazo DCTFWeb, Alinhamento de Férias, Instabilidade VRE..." class="w-full pl-10 pr-4 py-2.5 bg-[#FAFAF9] dark:bg-[#191919] border border-[#EDEDEB] dark:border-[#333330] rounded-xl text-xs font-medium text-[#2F3437] dark:text-[#E6E6E5] focus:ring-2 focus:ring-[#0A213D] focus:border-transparent outline-none transition">
+          </div>
+        </div>
+
+        <!-- ETAPA 3: MENSAGEM DO COMUNICADO (OBRIGATÓRIO) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-[#0A213D] dark:text-[#DFC48B]">
+              Mensagem do Comunicado <span class="text-rose-500">*</span>:
+            </label>
+            <span class="text-[10px] text-[#787774] dark:text-[#9B9A97]">Visível para toda a equipe</span>
+          </div>
+          <textarea id="mural-novo-mensagem" rows="4" placeholder="Escreva o comunicado ou aviso detalhado para toda a equipe..." required class="w-full p-3.5 bg-[#FAFAF9] dark:bg-[#191919] border border-[#EDEDEB] dark:border-[#333330] rounded-xl text-xs font-medium text-[#2F3437] dark:text-[#E6E6E5] focus:ring-2 focus:ring-[#0A213D] focus:border-transparent outline-none transition leading-relaxed resize-none"></textarea>
+        </div>
+
+        <!-- ETAPA 4: FIXAR COMUNICADO NO TOPO -->
+        <label class="flex items-start space-x-3 p-3 rounded-2xl border border-[#EDEDEB] dark:border-[#333330] bg-[#FAFAF9] dark:bg-[#191919] hover:bg-slate-50 dark:hover:bg-[#252525] transition cursor-pointer select-none">
+          <input type="checkbox" id="mural-novo-fixar" class="mt-0.5 rounded border-slate-300 text-[#0A213D] focus:ring-[#0A213D] w-4 h-4 cursor-pointer">
+          <div class="text-xs">
+            <span class="font-bold text-[#0A213D] dark:text-[#DFC48B] flex items-center space-x-1.5">
+              <span>📌</span>
+              <span>Fixar este comunicado no topo do mural</span>
+            </span>
+            <p class="text-[11px] text-[#787774] dark:text-[#9B9A97] mt-0.5">
+              Comunicados fixados permanecem com destaque no topo para todos os colaboradores.
+            </p>
+          </div>
+        </label>
+
+        <!-- AÇÕES DO RODAPÉ -->
+        <div class="pt-2 flex items-center justify-end space-x-2.5">
+          <button type="button" onclick="fecharModalNovoAvisoMural()" class="px-4 py-2.5 rounded-xl border border-[#EDEDEB] dark:border-[#333330] text-xs font-bold text-[#787774] hover:text-[#0A213D] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#252525] transition cursor-pointer">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-submit-mural" class="px-5 py-2.5 bg-[#0A213D] hover:bg-[#153358] text-white font-bold rounded-xl text-xs shadow-xs transition active:scale-98 flex items-center space-x-2 cursor-pointer">
+            <i data-lucide="send" class="w-3.5 h-3.5 text-[#C5A059]"></i>
+            <span>Publicar Comunicado</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
   <!-- MODAL: DOSSIÊ SOCIETÁRIO PARA JUNTA COMERCIAL / VRE -->
   <!-- ======================================================== -->
   <div id="modal-dossie-junta" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">

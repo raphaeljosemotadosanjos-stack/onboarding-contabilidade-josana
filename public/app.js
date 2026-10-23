@@ -874,6 +874,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     fecharMenuPerfilTopbar();
+    fecharModalNovoAvisoMural();
   }
 });
 
@@ -8028,35 +8029,129 @@ async function renderMuralEquipe(container) {
   }
 }
 
-async function abrirModalNovoAvisoMural() {
-  const titulo = prompt('Título do comunicado (opcional):');
-  if (titulo === null) return;
+function abrirModalNovoAvisoMural() {
+  const modal = document.getElementById('modal-novo-aviso-mural');
+  if (!modal) return;
 
-  const mensagem = prompt('Mensagem do comunicado:');
-  if (!mensagem || !mensagem.trim()) return;
+  const inputTitulo = document.getElementById('mural-novo-titulo');
+  const inputMsg = document.getElementById('mural-novo-mensagem');
+  const chkFixar = document.getElementById('mural-novo-fixar');
 
-  const tipoPrompt = prompt('Categoria do aviso:\n1 - Informativo\n2 - Urgente\n3 - Aviso Importante\n4 - Sistemas / Instabilidade', '1');
-  const tiposMap = { '1': 'INFO', '2': 'URGENTE', '3': 'AVISO', '4': 'SISTEMA' };
-  const tipo = tiposMap[tipoPrompt] || 'INFO';
+  if (inputTitulo) inputTitulo.value = '';
+  if (inputMsg) inputMsg.value = '';
+  if (chkFixar) chkFixar.checked = false;
 
-  const fixar = confirm('Deseja fixar este comunicado com destaque no topo do mural?');
+  selecionarTipoAvisoMural('INFO');
+
+  modal.classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+
+  setTimeout(() => {
+    if (inputTitulo) inputTitulo.focus();
+  }, 100);
+}
+
+function fecharModalNovoAvisoMural() {
+  const modal = document.getElementById('modal-novo-aviso-mural');
+  if (modal) modal.classList.add('hidden');
+}
+
+function selecionarTipoAvisoMural(tipo) {
+  const hiddenInput = document.getElementById('mural-novo-tipo');
+  if (hiddenInput) hiddenInput.value = tipo;
+
+  const configs = {
+    'INFO': {
+      activeClass: ['border-sky-400', 'bg-sky-50', 'dark:bg-sky-950/40', 'text-sky-900', 'dark:text-sky-200', 'ring-2', 'ring-sky-400/30', 'shadow-2xs'],
+      subtextActive: ['text-sky-600', 'dark:text-sky-400']
+    },
+    'URGENTE': {
+      activeClass: ['border-rose-400', 'bg-rose-50', 'dark:bg-rose-950/40', 'text-rose-900', 'dark:text-rose-200', 'ring-2', 'ring-rose-400/30', 'shadow-2xs'],
+      subtextActive: ['text-rose-600', 'dark:text-rose-400']
+    },
+    'AVISO': {
+      activeClass: ['border-amber-400', 'bg-amber-50', 'dark:bg-amber-950/40', 'text-amber-900', 'dark:text-amber-200', 'ring-2', 'ring-amber-400/30', 'shadow-2xs'],
+      subtextActive: ['text-amber-600', 'dark:text-amber-400']
+    },
+    'SISTEMA': {
+      activeClass: ['border-purple-400', 'bg-purple-50', 'dark:bg-purple-950/40', 'text-purple-900', 'dark:text-purple-200', 'ring-2', 'ring-purple-400/30', 'shadow-2xs'],
+      subtextActive: ['text-purple-600', 'dark:text-purple-400']
+    }
+  };
+
+  const defaultClasses = ['border-[#EDEDEB]', 'dark:border-[#333330]', 'bg-[#FAFAF9]', 'dark:bg-[#191919]', 'text-[#2F3437]', 'dark:text-[#E6E6E5]'];
+  const allActiveClasses = Object.values(configs).flatMap(c => c.activeClass);
+  const allSubtextClasses = Object.values(configs).flatMap(c => c.subtextActive);
+
+  ['INFO', 'URGENTE', 'AVISO', 'SISTEMA'].forEach(t => {
+    const btn = document.getElementById(`btn-tipo-mural-${t}`);
+    if (!btn) return;
+
+    btn.classList.remove(...allActiveClasses, ...defaultClasses);
+    const sub = btn.querySelector('span:last-child');
+    if (sub) {
+      sub.classList.remove(...allSubtextClasses, 'text-[#787774]', 'dark:text-[#9B9A97]');
+    }
+
+    if (t === tipo) {
+      btn.classList.add(...configs[t].activeClass);
+      if (sub) sub.classList.add(...configs[t].subtextActive);
+    } else {
+      btn.classList.add(...defaultClasses);
+      if (sub) sub.classList.add('text-[#787774]', 'dark:text-[#9B9A97]');
+    }
+  });
+}
+
+async function submeterNovoAvisoMural(event) {
+  if (event) event.preventDefault();
+
+  const titulo = document.getElementById('mural-novo-titulo')?.value?.trim() || null;
+  const mensagem = document.getElementById('mural-novo-mensagem')?.value?.trim();
+  const tipo = document.getElementById('mural-novo-tipo')?.value || 'INFO';
+  const fixar = document.getElementById('mural-novo-fixar')?.checked || false;
+
+  if (!mensagem) {
+    mostrarToast('Por favor, digite a mensagem do comunicado.', 'alerta');
+    document.getElementById('mural-novo-mensagem')?.focus();
+    return;
+  }
+
+  const btnSubmit = document.getElementById('btn-submit-mural');
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i><span>Publicando...</span>';
+    if (window.lucide) lucide.createIcons();
+  }
 
   try {
     const res = await fetch('/api/mural-avisos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        titulo: titulo ? titulo.trim() : null,
-        mensagem: mensagem.trim(),
+        titulo: titulo || null,
+        mensagem,
         tipo,
         fixado: fixar ? 1 : 0
       })
     });
-    if (!res.ok) throw new Error('Erro ao publicar comunicado.');
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.erro || 'Erro ao publicar comunicado no mural.');
+    }
+
+    fecharModalNovoAvisoMural();
     mostrarToast('Comunicado publicado com sucesso no mural da equipe!', 'sucesso');
     renderMuralEquipe(document.getElementById('view-container'));
   } catch (err) {
-    alert(err.message);
+    mostrarToast(err.message, 'erro');
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5 text-[#C5A059]"></i><span>Publicar Comunicado</span>';
+      if (window.lucide) lucide.createIcons();
+    }
   }
 }
 
