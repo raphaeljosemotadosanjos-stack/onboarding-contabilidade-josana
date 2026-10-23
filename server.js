@@ -3359,6 +3359,23 @@ app.post('/api/clientes/:id/mensagens', (req, res) => {
       registrarHistorico(id, colabId, colabNome, 'AVISO_FIXADO', `Fixou um aviso importante na comunicação da empresa: "${mensagem.trim().substring(0, 60)}..."`);
     }
 
+    try {
+      const clienteRow = db.prepare('SELECT id, razao_social, nome_fantasia FROM clientes WHERE id = ?').get(id);
+      const empresaNome = clienteRow?.nome_fantasia || clienteRow?.razao_social || 'Empresa';
+      processarMencoesNotificacao({
+        texto: mensagem.trim(),
+        autorId: colabId,
+        autorNome: colabNome,
+        autorCor: colabCor,
+        destinoTipo: 'chat_cliente',
+        destinoId: id,
+        contextoNome: empresaNome,
+        tipo: 'MENCAO_CHAT'
+      });
+    } catch (eNotif) {
+      console.warn('Erro ao disparar notificações de menção no chat:', eNotif.message);
+    }
+
     const novaMensagem = db.prepare('SELECT * FROM mensagens_internas_cliente WHERE id = ?').get(msgId);
     res.status(201).json(novaMensagem);
   } catch (err) {
@@ -3447,6 +3464,21 @@ app.post('/api/mural-avisos', (req, res) => {
       fixado ? 1 : 0
     );
 
+    try {
+      processarMencoesNotificacao({
+        texto: `${titulo ? titulo + ': ' : ''}${mensagem.trim()}`,
+        autorId: colabId,
+        autorNome: colabNome,
+        autorCor: colabCor,
+        destinoTipo: 'mural',
+        destinoId: avisoId,
+        contextoNome: 'Mural Geral de Recados',
+        tipo: 'MENCAO_MURAL'
+      });
+    } catch (eNotif) {
+      console.warn('Erro ao disparar notificações de menção no mural:', eNotif.message);
+    }
+
     const novoAviso = db.prepare('SELECT * FROM mural_avisos_equipe WHERE id = ?').get(avisoId);
     res.status(201).json(novoAviso);
   } catch (err) {
@@ -3481,6 +3513,208 @@ app.delete('/api/mural-avisos/:id', (req, res) => {
     }
 
     db.prepare('DELETE FROM mural_avisos_equipe WHERE id = ?').run(id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =========================================================================
+// MÓDULO: CENTRAL DE NOTIFICAÇÕES & MENÇÕES ENTRE COLABORADORES
+// =========================================================================
+
+function processarMencoesNotificacao({
+  texto,
+  autorId,
+  autorNome,
+  autorCor,
+  destinoTipo, // 'chat_cliente' | 'mural'
+  destinoId,   // clienteId ou avisoId
+  contextoNome, // Razão Social / Nome Fantasia ou 'Mural Geral de Recados'
+  tipo = 'MENCAO_CHAT'
+}) {
+  try {
+    if (!texto || typeof texto !== 'string') return [];
+
+    const colaboradores = db.prepare('SELECT id, nome, email, departamento FROM colaboradores WHERE ativo = 1').all();
+    if (!colaboradores || colaboradores.length === 0) return [];
+
+    const destinatariosIds = new Set();
+
+    // 1. Menção Global (@todos ou @equipe)
+    const mencaoGlobal = /@todos\b/i.test(texto) || /@equipe\b/i.test(texto);
+    if (mencaoGlobal) {
+      colaboradores.forEach(c => {
+        if (c.id !== autorId) destinatariosIds.add(c.id);
+      });
+    }
+
+    // 2. Menção por Departamento (@fiscal, @pessoal, @dp, @contabil, @paralegal, @coordenacao, etc.)
+    const mapaDepartamentos = {
+      'paralegal': 'PARALEGAL',
+      'fiscal': 'FISCAL',
+      'pessoal': 'PESSOAL',
+      'dp': 'PESSOAL',
+      'contabil': 'CONTABIL',
+      'contábil': 'CONTABIL',
+      'coordenacao': 'COORDENACAO',
+      'coordenação': 'COORDENACAO',
+      'diretoria': 'DIRETORIA',
+      'onboarding': 'ONBOARDING'
+    };
+
+    for (const [termo, dep] of Object.entries(mapaDepartamentos)) {
+      const regDep = new RegExp(`@${termo}\\b`, 'i');
+      if (regDep.test(texto)) {
+        colaboradores.forEach(c => {
+          if (c.id !== autorId && c.departamento && c.departamento.toUpperCase() === dep) {
+            destinatariosIds.add(c.id);
+          }
+        });
+      }
+    }
+
+    // 3. Menção Individual por Colaborador (@Nome, @Sobrenome, @Email)
+    for (const c of colaboradores) {
+      if (c.id === autorId) continue;
+
+      const nomeCompleto = c.nome.trim();
+      const primeiroNome = c.nome.trim().split(/\s+/)[0];
+      const emailPrefixo = c.email ? c.email.split('@')[0] : '';
+
+      const regNomeComp = new RegExp(`@${nomeCompleto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      const regPrimNome = new RegExp(`@${primeiroNome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      const regEmail = emailPrefixo ? new RegExp(`@${emailPrefixo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i') : null;
+      const regId = new RegExp(`@${c.id}\\b`, 'i');
+
+      if (
+        regNomeComp.test(texto) ||
+        regPrimNome.test(texto) ||
+        (regEmail && regEmail.test(texto)) ||
+        regId.test(texto)
+      ) {
+        destinatariosIds.add(c.id);
+      }
+    }
+
+    if (destinatariosIds.size === 0) return [];
+
+    const resumoMsg = texto.length > 140 ? texto.substring(0, 137) + '...' : texto;
+
+    const stmt = db.prepare(`
+      INSERT INTO notificacoes (
+        id, colaborador_id, autor_id, autor_nome, autor_cor, tipo, titulo, mensagem, destino_tipo, destino_id, contexto_nome, lida
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+    `);
+
+    const criadas = [];
+    for (const colabId of destinatariosIds) {
+      const notifId = uid('notif');
+      const tituloNotif = destinoTipo === 'chat_cliente'
+        ? `${autorNome} mencionou você no Onboarding de ${contextoNome}`
+        : `${autorNome} mencionou você no Mural de Recados`;
+
+      stmt.run(
+        notifId,
+        colabId,
+        autorId || null,
+        autorNome || 'Colaborador',
+        autorCor || '#0A213D',
+        tipo,
+        tituloNotif,
+        resumoMsg,
+        destinoTipo,
+        destinoId,
+        contextoNome || 'Geral'
+      );
+      criadas.push(notifId);
+    }
+
+    return criadas;
+  } catch (err) {
+    console.error('Erro ao processar menções:', err);
+    return [];
+  }
+}
+
+// 1. Listar Notificações do Colaborador Logado
+app.get('/api/notificacoes', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    if (!auth) return res.json({ notificacoes: [], total_nao_lidas: 0 });
+
+    const apenasNaoLidas = req.query.apenas_nao_lidas === 'true';
+    let query = `
+      SELECT n.*, c.foto_url as autor_foto
+      FROM notificacoes n
+      LEFT JOIN colaboradores c ON c.id = n.autor_id
+      WHERE n.colaborador_id = ?
+    `;
+    if (apenasNaoLidas) {
+      query += ' AND n.lida = 0';
+    }
+    query += ' ORDER BY n.created_at DESC LIMIT 50';
+
+    const notificacoes = db.prepare(query).all(auth.id);
+    const totalNaoLidas = db.prepare('SELECT COUNT(*) as count FROM notificacoes WHERE colaborador_id = ? AND lida = 0').get(auth.id).count;
+
+    res.json({
+      notificacoes,
+      total_nao_lidas: totalNaoLidas
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Contagem rápida de notificações não lidas
+app.get('/api/notificacoes/contagem', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    if (!auth) return res.json({ total_nao_lidas: 0 });
+
+    const totalNaoLidas = db.prepare('SELECT COUNT(*) as count FROM notificacoes WHERE colaborador_id = ? AND lida = 0').get(auth.id).count;
+    res.json({ total_nao_lidas: totalNaoLidas });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Marcar uma notificação específica como lida
+app.put('/api/notificacoes/:id/lida', (req, res) => {
+  try {
+    const { id } = req.params;
+    const auth = getColaboradorAutenticado(req);
+    if (!auth) return res.status(401).json({ error: 'Não autenticado.' });
+
+    db.prepare('UPDATE notificacoes SET lida = 1 WHERE id = ? AND colaborador_id = ?').run(id, auth.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Marcar todas as notificações do usuário como lidas
+app.put('/api/notificacoes/marcar-todas-lidas', (req, res) => {
+  try {
+    const auth = getColaboradorAutenticado(req);
+    if (!auth) return res.status(401).json({ error: 'Não autenticado.' });
+
+    db.prepare('UPDATE notificacoes SET lida = 1 WHERE colaborador_id = ?').run(auth.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Excluir uma notificação
+app.delete('/api/notificacoes/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const auth = getColaboradorAutenticado(req);
+    if (!auth) return res.status(401).json({ error: 'Não autenticado.' });
+
+    db.prepare('DELETE FROM notificacoes WHERE id = ? AND colaborador_id = ?').run(id, auth.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

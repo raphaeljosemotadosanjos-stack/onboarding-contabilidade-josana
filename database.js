@@ -348,6 +348,24 @@ db.exec(`
     fixado INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  -- Central de Notificações & Menções entre Colaboradores
+  CREATE TABLE IF NOT EXISTS notificacoes (
+    id TEXT PRIMARY KEY,
+    colaborador_id TEXT NOT NULL,
+    autor_id TEXT,
+    autor_nome TEXT NOT NULL,
+    autor_cor TEXT DEFAULT '#0A213D',
+    tipo TEXT NOT NULL DEFAULT 'MENCAO_CHAT',
+    titulo TEXT NOT NULL,
+    mensagem TEXT NOT NULL,
+    destino_tipo TEXT NOT NULL,
+    destino_id TEXT,
+    contexto_nome TEXT,
+    lida INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(colaborador_id) REFERENCES colaboradores(id) ON DELETE CASCADE
+  );
 `);
 
 // Mensagem de boas-vindas inicial no mural se estiver vazio

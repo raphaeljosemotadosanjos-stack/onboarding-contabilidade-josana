@@ -830,6 +830,9 @@ function atualizarDisplayUsuarioLogado() {
   if (sideAvatarSlot) {
     sideAvatarSlot.innerHTML = obterAvatarColaboradorHtml(estado.usuarioLogado, 'w-8 h-8');
   }
+
+  // Atualiza imediatamente a contagem de menções e notificações não lidas
+  atualizarBadgesNotificacoes();
 }
 
 // =========================================================================
@@ -863,17 +866,22 @@ function fecharMenuPerfilTopbar() {
   }
 }
 
-// Fechar menu dropdown ao clicar fora ou pressionar ESC
+// Fechar menus dropdown ao clicar fora ou pressionar ESC
 document.addEventListener('click', (e) => {
-  const container = document.getElementById('dropdown-perfil-container');
-  if (container && !container.contains(e.target)) {
+  const containerPerfil = document.getElementById('dropdown-perfil-container');
+  if (containerPerfil && !containerPerfil.contains(e.target)) {
     fecharMenuPerfilTopbar();
+  }
+  const containerNotif = document.getElementById('dropdown-notificacoes-container');
+  if (containerNotif && !containerNotif.contains(e.target)) {
+    fecharMenuNotificacoesTopbar();
   }
 });
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     fecharMenuPerfilTopbar();
+    fecharMenuNotificacoesTopbar();
     fecharModalNovoAvisoMural();
   }
 });
@@ -1224,8 +1232,13 @@ function navegarPara(tela, param = null) {
     titulo.textContent = 'Mural de Recados da Equipe';
     subtitulo.textContent = 'Comunicados internos, avisos de sistemas e comunicados da diretoria';
     renderMuralEquipe(container);
+  } else if (tela === 'notificacoes') {
+    titulo.textContent = 'Central de Notificações & Menções';
+    subtitulo.textContent = 'Menções a você em chats de onboarding e avisos do mural';
+    renderCentralNotificacoes(container);
   }
 
+  atualizarBadgesNotificacoes();
   lucide.createIcons();
 }
 
@@ -7775,7 +7788,7 @@ async function renderChatInternoCliente(container, clienteId) {
                   </div>
                 </div>
                 <div class="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap pl-8">
-                  ${m.mensagem}
+                  ${formatarMensagemComMencoes(m.mensagem)}
                 </div>
               </div>
             `;
@@ -7786,7 +7799,10 @@ async function renderChatInternoCliente(container, clienteId) {
         <form onsubmit="enviarMensagemInternaCliente(event, '${clienteId}')" class="p-4 bg-white border-t border-slate-200 space-y-2.5 flex-shrink-0">
           <!-- PILLS DE MENÇÃO RÁPIDA -->
           <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
-            <span class="font-bold text-slate-500 mr-1">Notificar setor:</span>
+            <span class="font-bold text-slate-500 mr-1 flex items-center space-x-1">
+              <i data-lucide="at-sign" class="w-3 h-3 text-[#C5A059]"></i>
+              <span>Mencionar:</span>
+            </span>
             <button type="button" onclick="adicionarMencaoAoChat('@Todos')" class="px-2 py-0.5 bg-slate-100 hover:bg-sky-50 hover:text-sky-700 text-slate-700 font-bold rounded-lg border border-slate-200 transition text-[10px]">
               @Todos
             </button>
@@ -7805,6 +7821,11 @@ async function renderChatInternoCliente(container, clienteId) {
             <button type="button" onclick="adicionarMencaoAoChat('@Coordenação')" class="px-2 py-0.5 bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold rounded-lg border border-sky-200 transition text-[10px]">
               @Coordenação
             </button>
+            ${(estado.colaboradores || []).filter(c => c.ativo !== 0).map(c => `
+              <button type="button" onclick="adicionarMencaoAoChat('@${c.nome.split(' ')[0]}')" class="px-2 py-0.5 bg-[#F7F7F5] hover:bg-[#C5A059]/20 hover:text-[#0A213D] text-slate-700 font-bold rounded-lg border border-slate-200 transition text-[10px]" title="Mencionar ${c.nome}">
+                @${c.nome.split(' ')[0]}
+              </button>
+            `).join('')}
           </div>
 
           <!-- CAMPO DE DIGITAÇÃO -->
@@ -7999,7 +8020,7 @@ async function renderMuralEquipe(container) {
                     </div>
 
                     ${a.titulo ? `<h3 class="font-bold text-slate-900 text-sm leading-snug">${a.titulo}</h3>` : ''}
-                    <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">${a.mensagem}</p>
+                    <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">${formatarMensagemComMencoes(a.mensagem)}</p>
                   </div>
 
                   <!-- AUTOR & TIMESTAMP -->
@@ -8182,3 +8203,395 @@ async function excluirAvisoMural(id) {
     alert(err.message);
   }
 }
+
+// =========================================================================
+// MÓDULO: CENTRAL DE NOTIFICAÇÕES & MENÇÕES ENTRE COLABORADORES
+// =========================================================================
+
+let _filtroNotificacoesAtual = 'todas'; // 'todas' | 'nao_lidas' | 'chat_cliente' | 'mural'
+
+function formatarMensagemComMencoes(texto) {
+  if (!texto) return '';
+  return texto.replace(/@([a-zA-ZÀ-ÿ0-9_]+(?:\s[a-zA-ZÀ-ÿ0-9_]+)?)/g, (match) => {
+    return `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-[#C5A059]/20 text-[#0A213D] font-bold text-[11px] border border-[#C5A059]/30">${match}</span>`;
+  });
+}
+
+function adicionarMencaoAoChat(mencao) {
+  const input = document.getElementById('input-chat-empresa-texto');
+  if (!input) return;
+  const textoAtual = input.value;
+  input.value = textoAtual ? (textoAtual.endsWith(' ') ? textoAtual + mencao + ' ' : textoAtual + ' ' + mencao + ' ') : mencao + ' ';
+  input.focus();
+}
+
+function adicionarMencaoAoMural(mencao) {
+  const input = document.getElementById('mural-novo-mensagem');
+  if (!input) return;
+  const textoAtual = input.value;
+  input.value = textoAtual ? (textoAtual.endsWith(' ') ? textoAtual + mencao + ' ' : textoAtual + ' ' + mencao + ' ') : mencao + ' ';
+  input.focus();
+}
+
+function alternarMenuNotificacoesTopbar(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('dropdown-notificacoes-menu');
+  if (!menu) return;
+
+  const estaAberto = !menu.classList.contains('hidden');
+  if (estaAberto) {
+    fecharMenuNotificacoesTopbar();
+  } else {
+    fecharMenuPerfilTopbar();
+    menu.classList.remove('hidden');
+    carregarNotificacoesDropdown();
+  }
+}
+
+function fecharMenuNotificacoesTopbar() {
+  const menu = document.getElementById('dropdown-notificacoes-menu');
+  if (menu) menu.classList.add('hidden');
+}
+
+async function atualizarBadgesNotificacoes() {
+  if (!estado?.usuarioLogado?.id) return;
+  try {
+    const res = await fetch('/api/notificacoes/contagem');
+    if (!res.ok) return;
+    const data = await res.json();
+    const count = data.total_nao_lidas || 0;
+
+    const badgeTopbar = document.getElementById('badge-topbar-notificacoes');
+    const badgeNav = document.getElementById('badge-nav-notificacoes');
+
+    if (badgeTopbar) {
+      if (count > 0) {
+        badgeTopbar.textContent = count > 99 ? '99+' : count;
+        badgeTopbar.classList.remove('hidden');
+      } else {
+        badgeTopbar.classList.add('hidden');
+      }
+    }
+
+    if (badgeNav) {
+      if (count > 0) {
+        badgeNav.textContent = count > 99 ? '99+' : count;
+        badgeNav.classList.remove('hidden');
+      } else {
+        badgeNav.classList.add('hidden');
+      }
+    }
+  } catch (err) {
+    console.warn('Erro ao atualizar badges de notificações:', err);
+  }
+}
+
+async function carregarNotificacoesDropdown() {
+  const lista = document.getElementById('dropdown-notificacoes-lista');
+  const subtitulo = document.getElementById('dropdown-notificacoes-subtitulo');
+  if (!lista) return;
+
+  lista.innerHTML = `
+    <div class="p-6 text-center text-slate-400 flex flex-col items-center justify-center space-y-2">
+      <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0A213D]"></div>
+      <span class="text-xs">Carregando menções...</span>
+    </div>
+  `;
+
+  try {
+    const res = await fetch('/api/notificacoes?apenas_nao_lidas=false');
+    if (!res.ok) throw new Error('Falha ao carregar notificações');
+    const data = await res.json();
+    const notificacoes = data.notificacoes || [];
+    const totalNaoLidas = data.total_nao_lidas || 0;
+
+    if (subtitulo) {
+      subtitulo.textContent = totalNaoLidas > 0 
+        ? `${totalNaoLidas} ${totalNaoLidas === 1 ? 'menção não lida' : 'menções não lidas'}`
+        : 'Todas as menções lidas';
+    }
+
+    if (notificacoes.length === 0) {
+      lista.innerHTML = `
+        <div class="p-8 text-center text-slate-400 space-y-2">
+          <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+            <i data-lucide="bell-off" class="w-5 h-5"></i>
+          </div>
+          <p class="text-xs font-bold text-slate-600">Nenhuma notificação no momento</p>
+          <p class="text-[11px] text-slate-400">Quando alguém marcar você com @ no chat ou no mural, ela aparecerá aqui.</p>
+        </div>
+      `;
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+
+    lista.innerHTML = notificacoes.map(n => {
+      const dataFmt = new Date(n.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+      const ehNaoLida = !n.lida;
+      const iconeTipo = n.destino_tipo === 'chat_cliente' ? 'building-2' : 'megaphone';
+
+      return `
+        <div onclick="abrirNotificacao('${n.id}', '${n.destino_tipo}', '${n.destino_id}')" class="p-3.5 hover:bg-slate-50 dark:hover:bg-[#252525] cursor-pointer transition flex items-start space-x-3 ${ehNaoLida ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''}">
+          <div class="relative flex-shrink-0">
+            <div class="w-8 h-8 rounded-full text-white font-bold flex items-center justify-center text-xs shadow-2xs" style="background-color: ${n.autor_cor || '#0A213D'}">
+              ${n.autor_nome ? n.autor_nome.split(' ').map(x => x[0]).slice(0, 2).join('') : 'JM'}
+            </div>
+            ${ehNaoLida ? `
+              <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white"></span>
+            ` : ''}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1 mb-0.5">
+              <span class="font-bold text-xs text-[#0A213D] dark:text-white truncate">${n.autor_nome}</span>
+              <span class="text-[10px] text-[#787774] flex-shrink-0">${dataFmt}</span>
+            </div>
+            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center space-x-1 truncate mb-1">
+              <i data-lucide="${iconeTipo}" class="w-3 h-3 text-[#C5A059] flex-shrink-0"></i>
+              <span class="truncate">${n.contexto_nome}</span>
+            </p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+              ${n.mensagem}
+            </p>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    lista.innerHTML = `
+      <div class="p-4 text-center text-rose-600 text-xs font-bold">
+        Erro ao carregar notificações: ${err.message}
+      </div>
+    `;
+  }
+}
+
+async function abrirNotificacao(id, destinoTipo, destinoId) {
+  try {
+    await fetch(`/api/notificacoes/${id}/lida`, { method: 'PUT' });
+    atualizarBadgesNotificacoes();
+  } catch (e) {
+    console.warn(e);
+  }
+
+  fecharMenuNotificacoesTopbar();
+
+  if (destinoTipo === 'chat_cliente') {
+    estado.modoVisualizacaoCliente = 'chat-empresa';
+    navegarPara('cliente-detalhes', destinoId);
+  } else if (destinoTipo === 'mural') {
+    navegarPara('mural-equipe');
+  } else {
+    navegarPara('dashboard');
+  }
+}
+
+async function marcarTodasNotificacoesLidas() {
+  try {
+    await fetch('/api/notificacoes/marcar-todas-lidas', { method: 'PUT' });
+    mostrarToast('Todas as notificações foram marcadas como lidas!', 'sucesso');
+    atualizarBadgesNotificacoes();
+    if (estado.tela === 'notificacoes') {
+      renderCentralNotificacoes(document.getElementById('view-container'));
+    } else {
+      carregarNotificacoesDropdown();
+    }
+  } catch (err) {
+    mostrarToast(err.message, 'erro');
+  }
+}
+
+async function excluirNotificacao(event, id) {
+  if (event) event.stopPropagation();
+  try {
+    await fetch(`/api/notificacoes/${id}`, { method: 'DELETE' });
+    mostrarToast('Notificação excluída.', 'sucesso');
+    atualizarBadgesNotificacoes();
+    if (estado.tela === 'notificacoes') {
+      renderCentralNotificacoes(document.getElementById('view-container'));
+    } else {
+      carregarNotificacoesDropdown();
+    }
+  } catch (err) {
+    mostrarToast(err.message, 'erro');
+  }
+}
+
+function filtrarNotificacoesView(filtro) {
+  _filtroNotificacoesAtual = filtro;
+  renderCentralNotificacoes(document.getElementById('view-container'));
+}
+
+async function renderCentralNotificacoes(container) {
+  container.innerHTML = `
+    <div class="flex items-center justify-center p-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A213D]"></div>
+    </div>
+  `;
+
+  try {
+    const res = await fetch('/api/notificacoes?apenas_nao_lidas=false');
+    if (!res.ok) throw new Error('Erro ao buscar notificações.');
+    const data = await res.json();
+    let lista = data.notificacoes || [];
+    const totalNaoLidas = data.total_nao_lidas || 0;
+
+    // Aplicar filtro de aba
+    if (_filtroNotificacoesAtual === 'nao_lidas') {
+      lista = lista.filter(n => !n.lida);
+    } else if (_filtroNotificacoesAtual === 'chat_cliente') {
+      lista = lista.filter(n => n.destino_tipo === 'chat_cliente');
+    } else if (_filtroNotificacoesAtual === 'mural') {
+      lista = lista.filter(n => n.destino_tipo === 'mural');
+    }
+
+    container.innerHTML = `
+      <div class="space-y-6 max-w-5xl mx-auto pb-12">
+        <!-- BANNER DE BOAS-VINDAS / CABEÇALHO DA CENTRAL -->
+        <div class="bg-gradient-to-r from-[#0A213D] via-[#102C4E] to-[#153358] rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+          <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-[#C5A059]/10 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div class="flex items-center space-x-4 relative z-10">
+            <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-[#C5A059] shadow-inner">
+              <i data-lucide="bell" class="w-7 h-7"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h2 class="text-xl font-extrabold tracking-tight">Central de Notificações &amp; Menções</h2>
+                ${totalNaoLidas > 0 ? `
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white shadow-xs">
+                    ${totalNaoLidas} ${totalNaoLidas === 1 ? 'não lida' : 'não lidas'}
+                  </span>
+                ` : `
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Tudo em dia
+                  </span>
+                `}
+              </div>
+              <p class="text-xs text-slate-300 mt-1 max-w-xl">
+                Toda vez que você for marcado com <span class="text-[#DFC48B] font-bold">@Nome</span> ou seu setor for acionado no chat das empresas ou no mural, a notificação é listada aqui para você nunca perder um alinhamento.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 relative z-10 self-start md:self-auto">
+            <button onclick="marcarTodasNotificacoesLidas()" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition border border-white/20 flex items-center space-x-2 cursor-pointer shadow-xs active:scale-95">
+              <i data-lucide="check-check" class="w-4 h-4 text-[#C5A059]"></i>
+              <span>Marcar todas como lidas</span>
+            </button>
+            <button onclick="renderCentralNotificacoes(document.getElementById('view-container'))" class="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs transition border border-white/20 cursor-pointer shadow-xs active:scale-95" title="Recarregar">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ABAS DE FILTRO -->
+        <div class="flex items-center space-x-2 border-b border-slate-200 dark:border-[#333330] pb-2 text-xs font-bold">
+          <button onclick="filtrarNotificacoesView('todas')" class="px-3.5 py-1.5 rounded-xl transition cursor-pointer ${_filtroNotificacoesAtual === 'todas' ? 'bg-[#0A213D] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'}">
+            Todas (${data.notificacoes ? data.notificacoes.length : 0})
+          </button>
+          <button onclick="filtrarNotificacoesView('nao_lidas')" class="px-3.5 py-1.5 rounded-xl transition cursor-pointer flex items-center space-x-1.5 ${_filtroNotificacoesAtual === 'nao_lidas' ? 'bg-[#0A213D] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'}">
+            <span>Não Lidas</span>
+            ${totalNaoLidas > 0 ? `<span class="w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center font-black">${totalNaoLidas}</span>` : ''}
+          </button>
+          <button onclick="filtrarNotificacoesView('chat_cliente')" class="px-3.5 py-1.5 rounded-xl transition cursor-pointer ${_filtroNotificacoesAtual === 'chat_cliente' ? 'bg-[#0A213D] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'}">
+            🏢 Chats em Onboarding
+          </button>
+          <button onclick="filtrarNotificacoesView('mural')" class="px-3.5 py-1.5 rounded-xl transition cursor-pointer ${_filtroNotificacoesAtual === 'mural' ? 'bg-[#0A213D] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'}">
+            📢 Mural Geral
+          </button>
+        </div>
+
+        <!-- LISTAGEM DE NOTIFICAÇÕES -->
+        ${lista.length === 0 ? `
+          <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3 shadow-sm">
+            <div class="w-16 h-16 rounded-2xl bg-amber-50 text-[#C5A059] flex items-center justify-center mx-auto shadow-inner">
+              <i data-lucide="bell-off" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">Você está em dia com suas menções!</h3>
+            <p class="text-xs text-slate-500 max-w-md mx-auto">
+              Nenhuma notificação encontrada no filtro selecionado. Quando algum colega de trabalho marcar você no chat ou no mural, você será alertado aqui imediatamente.
+            </p>
+          </div>
+        ` : `
+          <div class="space-y-3">
+            ${lista.map(n => {
+              const dataFmt = new Date(n.created_at).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' });
+              const ehNaoLida = !n.lida;
+              const ehChat = n.destino_tipo === 'chat_cliente';
+
+              return `
+                <div onclick="abrirNotificacao('${n.id}', '${n.destino_tipo}', '${n.destino_id}')" class="bg-white rounded-2xl border p-4 sm:p-5 transition hover:shadow-md cursor-pointer relative group ${ehNaoLida ? 'border-[#C5A059] ring-2 ring-[#C5A059]/20 shadow-xs bg-amber-50/15' : 'border-slate-200'}">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start space-x-3.5 flex-1 min-w-0">
+                      <!-- AVATAR DO AUTOR -->
+                      <div class="relative flex-shrink-0 mt-0.5">
+                        <div class="w-10 h-10 rounded-full text-white font-black flex items-center justify-center text-xs shadow-xs" style="background-color: ${n.autor_cor || '#0A213D'}">
+                          ${n.autor_nome ? n.autor_nome.split(' ').map(x => x[0]).slice(0, 2).join('') : 'JM'}
+                        </div>
+                        ${ehNaoLida ? `
+                          <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-rose-500 ring-2 ring-white animate-pulse"></span>
+                        ` : ''}
+                      </div>
+
+                      <!-- CONTEÚDO PRINCIPAL -->
+                      <div class="flex-1 min-w-0 space-y-1.5">
+                        <div class="flex flex-wrap items-center gap-2">
+                          <span class="font-extrabold text-sm text-[#0A213D]">${n.autor_nome}</span>
+                          <span class="text-xs text-slate-500">${ehChat ? 'mencionou você no chat da empresa' : 'mencionou você no comunicado do mural'}</span>
+                          <span class="px-2 py-0.5 rounded-lg text-xs font-bold ${ehChat ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-purple-50 text-purple-800 border border-purple-200'} flex items-center space-x-1">
+                            <i data-lucide="${ehChat ? 'building-2' : 'megaphone'}" class="w-3 h-3"></i>
+                            <span>${n.contexto_nome}</span>
+                          </span>
+                          ${ehNaoLida ? `
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-300">
+                              Não lida
+                            </span>
+                          ` : ''}
+                        </div>
+
+                        <!-- TRECHO DA MENSAGEM -->
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-800 leading-relaxed">
+                          ${formatarMensagemComMencoes(n.mensagem)}
+                        </div>
+
+                        <div class="flex items-center space-x-2 text-[11px] text-slate-400 pt-0.5">
+                          <i data-lucide="clock" class="w-3 h-3"></i>
+                          <span>${dataFmt}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- BOTÃO DIREITO -->
+                    <div class="flex items-center space-x-2 self-center flex-shrink-0">
+                      <button type="button" onclick="event.stopPropagation(); abrirNotificacao('${n.id}', '${n.destino_tipo}', '${n.destino_id}')" class="px-3.5 py-2 bg-[#0A213D] hover:bg-[#153358] text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center space-x-1.5 group-hover:scale-102">
+                        <span>Ir para o local</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-[#C5A059]"></i>
+                      </button>
+                      <button type="button" onclick="excluirNotificacao(event, '${n.id}')" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition" title="Excluir notificação">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+    `;
+
+    lucide.createIcons();
+    atualizarBadgesNotificacoes();
+  } catch (err) {
+    container.innerHTML = `<div class="p-6 bg-rose-50 text-rose-700 rounded-2xl font-bold">Erro ao carregar central de notificações: ${err.message}</div>`;
+  }
+}
+
+// Polling suave a cada 20 segundos para atualizar novas menções
+setInterval(() => {
+  if (estado?.usuarioLogado) {
+    atualizarBadgesNotificacoes();
+  }
+}, 20000);
