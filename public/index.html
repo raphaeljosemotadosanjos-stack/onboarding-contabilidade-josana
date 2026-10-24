@@ -1013,22 +1013,162 @@
   </div>
 
   <!-- MODAL: PRAZO EM LOTE POR ETAPA -->
-  <div id="modal-prazo-etapa" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border border-slate-200 overflow-hidden animate-in">
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <h3 class="font-bold text-slate-900 text-base" id="titulo-modal-prazo-etapa">Prazo para a Etapa</h3>
-        <button onclick="fecharModalPrazoEtapa()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <div id="modal-prazo-etapa" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onclick="if(event.target === this) fecharModalPrazoEtapa()">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm flex flex-col border border-[#EDEDEB] overflow-hidden animate-in relative my-auto">
+      <div class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.03] z-0">
+        <img src="/logo-monograma.png" alt="" class="w-[280px] h-[280px] object-contain select-none">
+      </div>
+      <div class="px-6 py-4 border-b border-[#EDEDEB] flex items-center justify-between bg-white relative z-10">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl p-1 border border-[#EDEDEB] flex items-center justify-center bg-white shadow-2xs">
+            <img src="/logo-monograma.png" alt="JM" class="max-h-full max-w-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-extrabold text-[#0A213D] text-sm" id="titulo-modal-prazo-etapa">Prazo para a Etapa</h3>
+            <p class="text-[11px] text-[#787774]">Josana Mota • Definição em Lote</p>
+          </div>
+        </div>
+        <button type="button" onclick="fecharModalPrazoEtapa()" class="text-[#787774] hover:text-[#0A213D] p-1.5 rounded-lg cursor-pointer transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
 
-      <div class="p-6 space-y-4 text-xs text-slate-700">
-        <p class="text-slate-600">Escolha a data limite para todas as atividades desta etapa:</p>
-        <input type="date" id="input-prazo-lote-data" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-none">
+      <div class="p-6 space-y-4 text-xs text-[#2F3437] relative z-10">
+        <p class="text-[#787774]">Escolha a data limite para todas as atividades desta etapa:</p>
+        <div class="relative">
+          <input type="date" id="input-prazo-lote-data" class="w-full p-2.5 bg-[#FAFAF9] border border-[#EDEDEB] rounded-xl text-xs font-semibold text-[#2F3437] focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
+        </div>
 
         <div class="flex justify-end space-x-2 pt-2">
-          <button onclick="fecharModalPrazoEtapa()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium">Cancelar</button>
-          <button onclick="aplicarPrazoLoteEtapa()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold shadow-sm">Aplicar na Etapa Inteira</button>
+          <button type="button" onclick="fecharModalPrazoEtapa()" class="px-4 py-2 border border-[#EDEDEB] rounded-xl text-xs font-bold text-[#787774] hover:text-[#0A213D] hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+          <button type="button" onclick="aplicarPrazoLoteEtapa()" class="px-4 py-2 bg-[#0A213D] hover:bg-[#153358] text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer">Aplicar na Etapa Inteira</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: EDIÇÃO / CRIAÇÃO DE TAREFAS DAS ETAPAS DO CHECKLIST -->
+  <!-- ======================================================== -->
+  <div id="modal-template-tarefa" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onclick="if(event.target === this) fecharModalTemplateTarefa()">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col border border-[#EDEDEB] overflow-hidden animate-in relative my-auto">
+      
+      <!-- MARCA D'ÁGUA SUTIL NO FUNDO -->
+      <div class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.03] z-0">
+        <img src="/logo-monograma.png" alt="" class="w-[360px] h-[360px] object-contain select-none">
+      </div>
+
+      <!-- CABEÇALHO PERSONALIZADO JOSANA MOTA -->
+      <div class="px-6 py-4 border-b border-[#EDEDEB] flex items-center justify-between bg-white relative z-10">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl p-1 border border-[#EDEDEB] flex items-center justify-center bg-white shadow-2xs">
+            <img src="/logo-monograma.png" alt="JM" class="max-h-full max-w-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-extrabold text-[#0A213D] text-sm" id="modal-template-tarefa-titulo-header">Configurar Tarefa da Etapa</h3>
+            <p class="text-[11px] text-[#787774]">Josana Mota Contabilidade • Modelos de Checklist</p>
+          </div>
+        </div>
+        <button type="button" onclick="fecharModalTemplateTarefa()" class="text-[#787774] hover:text-[#0A213D] p-1.5 rounded-lg cursor-pointer transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- FORMULÁRIO UNIFICADO EM UMA JANELA SÓ -->
+      <form id="form-template-tarefa" onsubmit="salvarModalTemplateTarefa(event)" class="p-6 space-y-4 relative z-10 text-xs text-[#2F3437]">
+        <input type="hidden" id="template-tarefa-id" value="">
+        <input type="hidden" id="template-tarefa-modulo" value="MODULO_A_GERAL">
+        <input type="hidden" id="template-tarefa-dep" value="IMPLANTACAO">
+        <input type="hidden" id="template-tarefa-etapa" value="1">
+
+        <!-- CAMPO 1: TÍTULO DA TAREFA -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-[#0A213D] flex items-center justify-between">
+            <span>Título da Atividade / Tarefa <span class="text-rose-500">*</span>:</span>
+            <span class="text-[10px] text-[#787774] font-normal">Checklist da etapa</span>
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#787774]">
+              <i data-lucide="check-square" class="w-4 h-4 text-[#C5A059]"></i>
+            </div>
+            <input type="text" id="template-tarefa-titulo" required placeholder="Ex: Conferir proposta comercial e contrato assinado..." class="w-full pl-10 pr-4 py-2.5 bg-[#FAFAF9] border border-[#EDEDEB] rounded-xl text-xs font-medium text-[#2F3437] focus:ring-2 focus:ring-[#0A213D] focus:border-transparent outline-none transition">
+          </div>
+        </div>
+
+        <!-- CAMPO 2: DEPARTAMENTO RESPONSÁVEL -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-[#0A213D]">
+            Departamento Responsável:
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="grid-selecao-departamento-template">
+            <button type="button" onclick="selecionarDepTemplate('IMPLANTACAO')" id="btn-dep-IMPLANTACAO" class="card-dep-template flex flex-col items-center justify-center p-2 rounded-xl border border-sky-400 bg-sky-50 text-sky-900 font-bold text-center transition cursor-pointer ring-2 ring-sky-400/30">
+              <span class="text-xs">Implantação</span>
+              <span class="text-[9px] text-sky-600 font-normal">Coordenação</span>
+            </button>
+            <button type="button" onclick="selecionarDepTemplate('FISCAL')" id="btn-dep-FISCAL" class="card-dep-template flex flex-col items-center justify-center p-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] hover:bg-emerald-50 text-[#2F3437] font-bold text-center transition cursor-pointer">
+              <span class="text-xs">Fiscal</span>
+              <span class="text-[9px] text-[#787774] font-normal">Tributos / XML</span>
+            </button>
+            <button type="button" onclick="selecionarDepTemplate('PESSOAL')" id="btn-dep-PESSOAL" class="card-dep-template flex flex-col items-center justify-center p-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] hover:bg-blue-50 text-[#2F3437] font-bold text-center transition cursor-pointer">
+              <span class="text-xs">Pessoal (DP)</span>
+              <span class="text-[9px] text-[#787774] font-normal">Folha / eSocial</span>
+            </button>
+            <button type="button" onclick="selecionarDepTemplate('CONTABIL')" id="btn-dep-CONTABIL" class="card-dep-template flex flex-col items-center justify-center p-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] hover:bg-purple-50 text-[#2F3437] font-bold text-center transition cursor-pointer">
+              <span class="text-xs">Contábil</span>
+              <span class="text-[9px] text-[#787774] font-normal">Balanço / Saldos</span>
+            </button>
+            <button type="button" onclick="selecionarDepTemplate('PARALEGAL')" id="btn-dep-PARALEGAL" class="card-dep-template flex flex-col items-center justify-center p-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] hover:bg-amber-50 text-[#2F3437] font-bold text-center transition cursor-pointer">
+              <span class="text-xs">Paralegal</span>
+              <span class="text-[9px] text-[#787774] font-normal">Junta / Societário</span>
+            </button>
+            <button type="button" onclick="selecionarDepTemplate('COMERCIAL')" id="btn-dep-COMERCIAL" class="card-dep-template flex flex-col items-center justify-center p-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] hover:bg-orange-50 text-[#2F3437] font-bold text-center transition cursor-pointer">
+              <span class="text-xs">Comercial</span>
+              <span class="text-[9px] text-[#787774] font-normal">Proposta / Vendas</span>
+            </button>
+            <button type="button" onclick="selecionarDepTemplate('ESPECIAL')" id="btn-dep-ESPECIAL" class="card-dep-template flex flex-col items-center justify-center p-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] hover:bg-slate-100 text-[#2F3437] font-bold text-center transition cursor-pointer sm:col-span-2">
+              <span class="text-xs">Especial / 3º Setor</span>
+              <span class="text-[9px] text-[#787774] font-normal">Demandas Específicas</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- CAMPO 3: ETAPA DO CHECKLIST -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-[#0A213D] flex items-center justify-between">
+            <span>Etapa do Checklist:</span>
+            <span class="text-[10px] text-[#787774] font-normal" id="badge-etapa-selecionada-nome">Etapa 01</span>
+          </label>
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-1.5" id="grid-selecao-etapa-template">
+            <button type="button" onclick="selecionarEtapaTemplate(0)" id="btn-etapa-0" class="btn-etapa-pill py-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] font-bold text-center text-xs transition cursor-pointer hover:bg-amber-50">E00</button>
+            <button type="button" onclick="selecionarEtapaTemplate(1)" id="btn-etapa-1" class="btn-etapa-pill py-2 rounded-xl border border-sky-400 bg-sky-50 text-sky-900 font-bold text-center text-xs transition cursor-pointer ring-2 ring-sky-400/30">E01</button>
+            <button type="button" onclick="selecionarEtapaTemplate(2)" id="btn-etapa-2" class="btn-etapa-pill py-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] font-bold text-center text-xs transition cursor-pointer hover:bg-sky-50">E02</button>
+            <button type="button" onclick="selecionarEtapaTemplate(3)" id="btn-etapa-3" class="btn-etapa-pill py-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] font-bold text-center text-xs transition cursor-pointer hover:bg-sky-50">E03</button>
+            <button type="button" onclick="selecionarEtapaTemplate(4)" id="btn-etapa-4" class="btn-etapa-pill py-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] font-bold text-center text-xs transition cursor-pointer hover:bg-sky-50">E04</button>
+            <button type="button" onclick="selecionarEtapaTemplate(5)" id="btn-etapa-5" class="btn-etapa-pill py-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] font-bold text-center text-xs transition cursor-pointer hover:bg-sky-50">E05</button>
+            <button type="button" onclick="selecionarEtapaTemplate(6)" id="btn-etapa-6" class="btn-etapa-pill py-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] font-bold text-center text-xs transition cursor-pointer hover:bg-sky-50">E06</button>
+            <button type="button" onclick="selecionarEtapaTemplate(7)" id="btn-etapa-7" class="btn-etapa-pill py-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] font-bold text-center text-xs transition cursor-pointer hover:bg-sky-50">E07</button>
+          </div>
+        </div>
+
+        <!-- AVISO DE ISOLAMENTO SEGURO -->
+        <div class="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-emerald-950 flex items-start space-x-2.5">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5"></i>
+          <p class="text-[11px] leading-relaxed">
+            <strong>Segurança dos Processos:</strong> Esta alteração afeta apenas os <strong>próximos clientes</strong> cadastrados. Processos que já estão em andamento permanecem 100% inalterados e protegidos.
+          </p>
+        </div>
+
+        <!-- AÇÕES DO RODAPÉ -->
+        <div class="pt-2 flex items-center justify-end space-x-2.5">
+          <button type="button" onclick="fecharModalTemplateTarefa()" class="px-4 py-2.5 rounded-xl border border-[#EDEDEB] text-xs font-bold text-[#787774] hover:text-[#0A213D] hover:bg-slate-50 transition cursor-pointer">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-submit-template-tarefa" class="px-5 py-2.5 bg-[#0A213D] hover:bg-[#153358] text-white font-bold rounded-xl text-xs shadow-xs transition active:scale-98 flex items-center space-x-2 cursor-pointer">
+            <i data-lucide="save" class="w-3.5 h-3.5 text-[#C5A059]"></i>
+            <span id="label-btn-salvar-template">Salvar Tarefa no Modelo</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1950,10 +2090,10 @@
           </div>
           <div>
             <div class="flex items-center space-x-1.5">
-              <h3 class="font-bold text-xs">Sara • Suporte & IA</h3>
+              <h3 class="font-bold text-xs">Sara • Inteligência Artificial Contábil</h3>
               <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
             </div>
-            <p class="text-[10px] text-white/80">Especialista no Sistema Josana Mota</p>
+            <p class="text-[10px] text-white/80">Especialista em Contabilidade, Tributos, DP &amp; Operações</p>
           </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -1974,34 +2114,30 @@
             IA
           </div>
           <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-[#EDEDEB] text-[#2F3437] max-w-[88%] space-y-1.5 shadow-2xs">
-            <p class="font-bold text-[#0A213D]">Olá! Sou a Sara, assistente do sistema Josana Mota.</p>
-            <p class="text-[11px] text-[#787774] leading-relaxed">Tire dúvidas sobre como usar qualquer parte do sistema, atalhos, envio de link de WhatsApp, CNAEs, Cockpit e prazos.</p>
+            <p class="font-bold text-[#0A213D]">Olá! Sou a Sara, Inteligência Artificial da Josana Mota Contabilidade.</p>
+            <p class="text-[11px] text-[#787774] leading-relaxed">Respondo a diversas questões sobre <strong>contabilidade, área fiscal, tributária, departamento pessoal, rotinas societárias</strong> e processos internos do escritório.</p>
           </div>
         </div>
 
         <!-- Chips de Dúvidas & Demandas Operacionais -->
         <div class="pt-2">
-          <span class="block text-[10px] font-bold text-[#787774] uppercase tracking-wider mb-2">Perguntas & Demandas:</span>
+          <span class="block text-[10px] font-bold text-[#787774] uppercase tracking-wider mb-2">Sugestões de Perguntas Contábeis:</span>
           <div class="flex flex-col gap-1.5">
-            <button onclick="enviarMensagemRapidaChat('Para que serve este sistema e como ele funciona?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
-              <span>🌟</span>
-              <span class="font-semibold text-[#0A213D]">Para que serve este sistema?</span>
+            <button onclick="enviarMensagemRapidaChat('Qual a diferença entre Simples Nacional e Lucro Presumido para serviços?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2 cursor-pointer">
+              <span>📊</span>
+              <span class="font-semibold text-[#0A213D]">Simples Nacional vs Lucro Presumido</span>
             </button>
-            <button onclick="enviarMensagemRapidaChat('Chegou um cliente novo que vai abrir empresa com sócios, o que fazer?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
+            <button onclick="enviarMensagemRapidaChat('Como funciona o cálculo do Fator R no Simples Nacional?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2 cursor-pointer">
+              <span>🧮</span>
+              <span class="font-medium">Como calcular o Fator R do Simples?</span>
+            </button>
+            <button onclick="enviarMensagemRapidaChat('Chegou um cliente novo que vai abrir empresa com sócios, o que fazer?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2 cursor-pointer">
               <span>🏢</span>
-              <span class="font-medium">Demanda: Novo cliente quer abrir empresa com sócios</span>
+              <span class="font-medium">Demanda: Novo cliente quer abrir empresa</span>
             </button>
-            <button onclick="enviarMensagemRapidaChat('O cliente já enviou os dados pelo WhatsApp, qual o próximo passo?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
-              <span>📥</span>
-              <span class="font-medium">Demanda: Cliente mandou documentos, o que fazer?</span>
-            </button>
-            <button onclick="enviarMensagemRapidaChat('A Junta Comercial aprovou a abertura e saiu o CNPJ, o que faço?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
-              <span>🏛️</span>
-              <span class="font-medium">Demanda: Junta aprovou e saiu o CNPJ</span>
-            </button>
-            <button onclick="enviarMensagemRapidaChat('Como enviar o link pro cliente responder pelo WhatsApp?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2">
-              <span>📱</span>
-              <span class="font-medium">Como enviar o link pro cliente pelo WhatsApp?</span>
+            <button onclick="enviarMensagemRapidaChat('Como funciona a esteira das 7 etapas de onboarding no escritório?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left flex items-center space-x-2 cursor-pointer">
+              <span>🚀</span>
+              <span class="font-medium">Como funciona a esteira das 7 etapas?</span>
             </button>
           </div>
         </div>
@@ -2009,8 +2145,8 @@
 
       <!-- INPUT DE ENVIO -->
       <form id="form-chat-ia" onsubmit="enviarMensagemChatIA(event)" class="p-3 border-t border-[#EDEDEB] bg-white flex items-center space-x-2 flex-shrink-0">
-        <input type="text" id="input-chat-ia-texto" placeholder="Digite sua dúvida sobre o sistema..." class="flex-1 px-3 py-2 bg-[#F7F7F5] border border-[#EDEDEB] rounded-xl text-xs focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
-        <button type="submit" id="btn-enviar-chat-ia" class="p-2 bg-[#0A213D] hover:bg-[#153358] text-white rounded-xl shadow-xs transition" title="Enviar Pergunta">
+        <input type="text" id="input-chat-ia-texto" placeholder="Pergunte sobre contabilidade, tributos, folha, societário..." class="flex-1 px-3 py-2 bg-[#F7F7F5] border border-[#EDEDEB] rounded-xl text-xs focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
+        <button type="submit" id="btn-enviar-chat-ia" class="p-2 bg-[#0A213D] hover:bg-[#153358] text-white rounded-xl shadow-xs transition cursor-pointer" title="Enviar Pergunta">
           <i data-lucide="send" class="w-4 h-4 text-[#C5A059]"></i>
         </button>
       </form>

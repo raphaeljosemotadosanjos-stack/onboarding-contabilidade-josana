@@ -1,6 +1,6 @@
 {
-  "versao": "2.4.0",
-  "data_atualizacao": "2026-10-20",
+  "versao": "3.0.0",
+  "data_atualizacao": "2026-10-24",
   "escritorio": "Josana Mota Contabilidade",
   "modulos": [
     {
@@ -11,7 +11,7 @@
       "topicos": [
         {
           "subtitulo": "Níveis de Permissão (RBAC)",
-          "conteudo": "O sistema possui 3 perfis hierárquicos de segurança:\n\n• **👑 GESTOR (Diretoria / Coordenação Geral):** Acesso irrestrito a todos os clientes, funil completo, relatórios executivos de SLA, métricas da equipe, exclusão e cadastro de colaboradores, alteração de níveis de permissão e chaves de IA.\n• **🚀 ONBOARDING (Implantação):** Acompanha a carteira inteira de clientes, avança qualquer uma das 7 etapas, gera dossiês da junta e dispara pautas de cobrança via WhatsApp.\n• **🔒 TÉCNICO (Operacional Setorial):** Focado no seu setor (Fiscal, Pessoal/DP, Contábil ou Paralegal). Acessa diretamente seu Cockpit Pessoal com as tarefas e empresas atribuídas ao seu squad, sem poluição visual ou risco de alterar processos de outras áreas."
+          "conteudo": "O sistema possui 3 perfis hierárquicos de segurança:\n\n• **👑 GESTOR (Diretoria / Coordenação Geral):** Acesso irrestrito a todos os clientes, funil completo, relatórios executivos de SLA, métricas da equipe, exclusão e cadastro de colaboradores, alteração de níveis de permissão e chaves de IA.\n• **🚀 ONBOARDING (Implantação):** Acompanha a carteira inteira de clientes, avança qualquer uma das 7 etapas, personaliza modelos mestres de checklist, gera dossiês da junta e dispara pautas de cobrança via WhatsApp.\n• **🔒 TÉCNICO (Operacional Setorial):** Focado no seu setor (Fiscal, Pessoal/DP, Contábil ou Paralegal). Acessa diretamente seu Cockpit Pessoal com as tarefas e empresas atribuídas ao seu squad, sem poluição visual ou risco de alterar processos de outras áreas."
         },
         {
           "subtitulo": "Login por PIN Individual & Troca de Usuário",
@@ -25,21 +25,25 @@
     },
     {
       "id": "onboarding_7_etapas",
-      "titulo": "2. Onboarding Contábil (Esteira das 7 Etapas)",
+      "titulo": "2. Onboarding Contábil (Esteira das 7 Etapas) & Cadastro com CNPJ",
       "icone": "git-pull-request",
       "descricao": "Fluxo padrão de implantação de empresas constituídas e transição operacional",
       "topicos": [
         {
+          "subtitulo": "Cadastro de Empresa Já Constituída com CNPJ",
+          "conteudo": "Ao cadastrar um novo cliente constituído:\n\n• Selecione a opção **'Empresa Já Constituída'**.\n• O campo **'Número do CNPJ'** fica em evidência com máscara dinâmica automática (`00.000.000/0000-00`).\n• O CNPJ cadastrado passa a ser exibido no cabeçalho do cliente, nos cards do painel e serve como filtro na barra de busca rápida."
+        },
+        {
           "subtitulo": "Estrutura das 7 Etapas do Onboarding",
-          "conteudo": "A jornada de entrada do cliente segue o método rigoroso em 7 etapas:\n\n1. **Etapa 01: Contrato & Alinhamento:** Coleta do contrato de prestação de serviços assinado, procurações eletrônicas da Receita/Prefeitura e reunião de boas-vindas com o cliente.\n2. **Etapa 02: Sistemas & Acessos:** Validação do Certificado Digital (e-CNPJ/e-CPF), emissão de senhas municipais e cadastramento do cliente no software contábil (Domínio Sistemas).\n3. **Etapa 03: Parametrização & Saldos:** Enquadramento tributário (Simples, Presumido, Real), importação do plano de contas, cadastro de produtos/alíquotas e saldos de balanço da contabilidade anterior.\n4. **Etapa 04: Documentos Iniciais:** Recebimento dos livros fiscais, folhas de pagamento anteriores, relação de funcionários, FGTS/INSS e contratos bancários.\n5. **Etapa 05: Treinamento & Integração:** Instrução do cliente sobre envio de extratos bancários, emissão correta de notas fiscais e canais oficiais de comunicação do escritório.\n6. **Etapa 06: Primeira Competência:** Execução e fechamento do primeiro mês fiscal e contábil, emissão das primeiras guias (DAS/DARF) e envio dos holerites.\n7. **Etapa 07: Homologação & Encerramento:** Reunião final de validação com os sócios, aplicação de pesquisa de satisfação (NPS) e entrega formal do cliente para a rotina contínua."
+          "conteudo": "A jornada de entrada do cliente segue o método rigoroso em 7 etapas:\n\n1. **Etapa 01: Formalização & Alinhamento:** Coleta do contrato de prestação de serviços assinado, procurações eletrônicas da Receita/Prefeitura e reunião de boas-vindas com o cliente.\n2. **Etapa 02: Diagnóstico & Sistemas:** Validação do Certificado Digital (e-CNPJ/e-CPF), emissão de senhas municipais e cadastramento do cliente no software contábil (Domínio Sistemas).\n3. **Etapa 03: Documentos & Parametrização:** Enquadramento tributário (Simples, Presumido, Real), importação do plano de contas, cadastro de produtos/alíquotas e saldos de balanço da contabilidade anterior.\n4. **Etapa 04: Implantação Operacional:** Recebimento dos livros fiscais, folhas de pagamento anteriores, relação de funcionários, FGTS/INSS e contratos bancários.\n5. **Etapa 05: Alinhamento & Treinamento:** Instrução do cliente sobre envio de extratos bancários, emissão correta de notas fiscais e canais oficiais de comunicação do escritório.\n6. **Etapa 06: Entregas (Mês 1 a Mês 3):** Execução e fechamento dos primeiros meses fiscais e contábeis, apuração dos tributos e envio dos holerites.\n7. **Etapa 07: Validação Final & Homologação:** Reunião final de validação com os sócios, aplicação de pesquisa de satisfação e entrega formal do cliente para a rotina contínua."
         },
         {
           "subtitulo": "Squad do Cliente (Distribuição de Responsáveis)",
           "conteudo": "Ao cadastrar um novo cliente, o gestor define os especialistas responsáveis de cada departamento: Paralegal, Fiscal, Pessoal e Contábil. Cada profissional recebe automaticamente suas tarefas e é notificado dos prazos."
         },
         {
-          "subtitulo": "Prazos em Lote por Etapa",
-          "conteudo": "Na ficha do onboarding, utilize o botão **'Definir Prazo em Lote'** para estipular a data limite de todas as atividades daquela etapa em apenas 1 clique, facilitando o cumprimento dos SLAs."
+          "subtitulo": "Prazos em Lote por Etapa & Notificações de SLA",
+          "conteudo": "Na ficha do onboarding, utilize o botão **'Definir Prazo em Lote'** para estipular a data limite de todas as atividades daquela etapa em apenas 1 clique, facilitando o cumprimento dos SLAs. O sistema também destaca com selo amarelo empresas aguardando resposta há mais de 48h."
         }
       ]
     },
@@ -51,7 +55,11 @@
       "topicos": [
         {
           "subtitulo": "Envio do Link de Coleta pelo WhatsApp",
-          "conteudo": "Para clientes que contrataram abertura de empresa:\n\n1. Abra a Ficha da Empresa em Constituição e clique em **'Link WhatsApp (Cliente)'** no topo do modal.\n2. O sistema copia um link criptografado seguro (ex: `/#coleta=TOKEN`).\n3. Envie este link diretamente pelo WhatsApp para o cliente.\n4. O cliente responde pelo celular ou computador **sem precisar de login ou senha**."
+          "conteudo": "Para clientes que contrataram abertura de empresa:\n\n1. Abra a Ficha da Empresa em Constituição e clique em **'Link WhatsApp (Cliente)'** no topo do modal.\n2. O sistema copia um link seguro criptografado (ex: `/#coleta=TOKEN`).\n3. Envie este link diretamente pelo WhatsApp para o cliente.\n4. O cliente responde pelo celular ou computador **sem precisar de login ou senha**."
+        },
+        {
+          "subtitulo": "Formatação Financeira & Valores em Reais (R$)",
+          "conteudo": "Todos os campos que envolvem valores monetários (capital social, faturamento estimado, pró-labore) são formatados automaticamente com o símbolo **R$**, separador de milhar por ponto (`.`) e decimais por vírgula (ex: `R$ 50.000,00`), garantindo clareza e padrão formal aos documentos societários."
         },
         {
           "subtitulo": "Múltiplos Sócios & Anexo de Documentos",
@@ -69,7 +77,7 @@
     },
     {
       "id": "cockpit_pessoal_e_ia",
-      "titulo": "4. Meu Cockpit Pessoal & IA de Produtividade",
+      "titulo": "4. Meu Cockpit Pessoal & Produtividade Individual",
       "icone": "sparkles",
       "descricao": "A tela de trabalho diário de cada colaborador técnico",
       "topicos": [
@@ -82,8 +90,8 @@
           "conteudo": "Alterne entre **📅 Esta Semana (7d)**, **📆 Este Mês (30d)** e **📊 Este Trimestre (90d)** para visualizar seu volume de entregas e índice de pontualidade em diferentes horizontes temporais."
         },
         {
-          "subtitulo": "Diagnóstico de IA & Coaching Profissional",
-          "conteudo": "Clique no botão **'Gerar Novo Diagnóstico IA'** no seu Cockpit. A IA analisa suas métricas reais de pontualidade, volume e possíveis gargalos e emite um relatório com:\n\n• Análise de ritmo e eficiência\n• Pontos fortes identificados\n• Pontos de atenção e prioridades dos próximos 5 dias\n• Dicas técnicas especializadas para o seu departamento (Fiscal, DP, Contábil ou Paralegal)."
+          "subtitulo": "Diagnóstico de Produtividade & Feedback",
+          "conteudo": "Clique no botão **'Gerar Novo Diagnóstico IA'** no seu Cockpit. O sistema analisa suas métricas reais de pontualidade, volume e possíveis gargalos e emite um relatório com ritmo de entregas, pontos fortes e dicas técnicas para o seu departamento."
         }
       ]
     },
@@ -98,8 +106,8 @@
           "conteudo": "Disponível para Gestores e Onboarding. Apresenta:\n\n• Score de Produtividade (0 a 100) calibrado por entregas dentro do prazo\n• Comparativo de entregas em 7, 30 e 90 dias\n• Taxa de Pontualidade (%) no cumprimento de datas limites\n• Destaque semanal com troféu para o #1 do ranking"
         },
         {
-          "subtitulo": "Raio-X & IA de Qualquer Colaborador",
-          "conteudo": "O Gestor pode clicar no botão **'Raio-X & IA'** de qualquer analista na tabela de métricas para inspecionar seu Cockpit pessoal e prestar auxílio em eventuais gargalos."
+          "subtitulo": "Raio-X de Qualquer Colaborador",
+          "conteudo": "O Gestor pode clicar no botão **'Raio-X'** de qualquer analista na tabela de métricas para inspecionar seu Cockpit pessoal e prestar auxílio em eventuais gargalos de tarefas."
         }
       ]
     },
@@ -120,18 +128,82 @@
       ]
     },
     {
-      "id": "modo_noturno_e_notion",
-      "titulo": "7. Modo Noturno (Dark Mode) & Design Notion",
-      "icone": "moon",
-      "descricao": "Personalização visual, alternância de tema e identidade Josana Mota",
+      "id": "design_corporativo_e_mobile",
+      "titulo": "7. Design Corporativo & Experiência Mobile (Smartphones)",
+      "icone": "smartphone",
+      "descricao": "Identidade nobre Josana Mota, alta legibilidade diurna e compatibilidade total com celulares",
       "topicos": [
         {
-          "subtitulo": "Como Ativar o Modo Noturno",
-          "conteudo": "Clique no botão de **Lua / Sol (🌙 / ☀️)** localizado na barra superior ou no rodapé do menu lateral. O sistema alterna instantaneamente para o tema noturno minimalista inspirado no Notion Dark Mode, salvando sua preferência para as próximas sessões."
+          "subtitulo": "Identidade Visual Corporativa Josana Mota",
+          "conteudo": "O sistema adota estritamente a identidade visual nobre da Josana Mota Contabilidade:\n\n• Monograma 'JM' dourado sobre caixa corporativa.\n• Cores predominantes: Azul Marinho Real (`#0A213D`) e Dourado Nobre (`#C5A059`).\n• Fundo claro de alto contraste e legibilidade documental, eliminando temas escuros para manter a padronização e o padrão gráfico institucional do escritório."
         },
         {
-          "subtitulo": "Identidade Visual & Monograma Oficial",
-          "conteudo": "O sistema utiliza o monograma 'JM' no quadrado dourado oficial e a paleta nobre Azul Marinho (`#0A213D`) e Dourado (`#C5A059`), projetada para clareza e elegância em ambos os modos de exibição."
+          "subtitulo": "Compatibilidade com Dispositivos Móveis (Smartphones e Tablets)",
+          "conteudo": "A interface é 100% responsiva e otimizada para navegação em telas touch de smartphones:\n\n• Menus recolhíveis com gaveta lateral intuitiva.\n• Modais com rolagem suave e botões touch-friendly com retorno háptico.\n• Formulário de coleta externa adaptado para digitação ágil no celular pelo cliente."
+        }
+      ]
+    },
+    {
+      "id": "mural_e_notificacoes",
+      "titulo": "8. Mural de Recados & Central de Notificações com Menções (@)",
+      "icone": "bell",
+      "descricao": "Comunicação interna do escritório, avisos importantes e alertas de menção",
+      "topicos": [
+        {
+          "subtitulo": "Mural de Recados Unificado",
+          "conteudo": "O Mural de Recados permite que a equipe compartilhe comunicados categorizados:\n\n• **Informativos**, **Urgentes**, **Importantes** e **Avisos de Sistemas**.\n• Novo pop-up estilizado em janela única com marca d'água corporativa, permitindo redigir, categorizar e fixar avisos no topo do mural sem sair do contexto."
+        },
+        {
+          "subtitulo": "Central de Notificações & Menções (@Colaborador)",
+          "conteudo": "Sempre que um colaborador é mencionado com `@Nome` ou `@Setor` (no Chat ou no Mural):\n\n• O sistema gera uma notificação instantânea para o destinatário.\n• O ícone de sino no canto superior direito (entre o Novo Onboarding e o Perfil) exibe o contador de não lidas.\n• Um painel de notificações também fica disponível logo abaixo do Mural de Recados.\n• **Redirecionamento com 1 clique:** Ao clicar na notificação, o usuário é direcionado imediatamente para a empresa ou recado onde foi marcado."
+        }
+      ]
+    },
+    {
+      "id": "chat_interno_e_minuta",
+      "titulo": "9. Chat Interno da Equipe & Gestão de Minuta de Contrato",
+      "icone": "messages-square",
+      "descricao": "Troca de mensagens contextualizada por cliente e emissão controlada de minutas",
+      "topicos": [
+        {
+          "subtitulo": "Chat Interno por Empresa",
+          "conteudo": "Dentro de cada Onboarding existe uma aba de **Chat Interno**, permitindo que o squad troque alinhamentos técnicos específicos sobre o cliente, fixe mensagens cruciais no topo e marque colegas com `@`."
+        },
+        {
+          "subtitulo": "Minuta de Contrato & Envio Manual pelo Colaborador",
+          "conteudo": "O sistema gera a Minuta do Contrato de Prestação de Serviços Contábeis de forma estruturada dentro da plataforma:\n\n• **Sem envio automático indesejado:** O contrato NÃO é enviado diretamente ao cliente ao término do formulário.\n• O documento fica salvo no sistema para revisão do colaborador, que pode baixar, copiar o link seguro e indicar formalmente no painel quando realizou o envio manual ao cliente."
+        }
+      ]
+    },
+    {
+      "id": "personalizacao_etapas",
+      "titulo": "10. Personalização das Etapas e Checklists (Onboarding & Gestor)",
+      "icone": "layers",
+      "descricao": "Ajuste dinâmico das tarefas do modelo mestre com segurança para processos em andamento",
+      "topicos": [
+        {
+          "subtitulo": "Edição de Modelos Mestres",
+          "conteudo": "Os perfis **Onboarding** e **Gestor** têm autonomia para personalizar as etapas do checklist:\n\n• Adicionar novas atividades ou requisitos regulatórios aos módulos.\n• Editar títulos, departamentos responsáveis (Fiscal, DP, Contábil, Paralegal, Implantação) e número da etapa.\n• Reordenar ou desativar tarefas que se tornaram obsoletas."
+        },
+        {
+          "subtitulo": "Isolamento Seguro de Processos em Andamento",
+          "conteudo": "Qualquer alteração realizada nos modelos mestres afeta **exclusivamente os próximos processos de clientes cadastrados**. Os processos que já estão abertos ou em execução na esteira permanecem rigorosamente protegidos e inalterados."
+        }
+      ]
+    },
+    {
+      "id": "ia_sara_contabil",
+      "titulo": "11. Sara: Inteligência Artificial Especialista em Contabilidade",
+      "icone": "bot",
+      "descricao": "Assistente inteligente treinada em legislação tributária, fiscal, trabalhista e contábil",
+      "topicos": [
+        {
+          "subtitulo": "Inteligência Artificial Real (LLM Avançada)",
+          "conteudo": "A Sara é alimentada por modelos de linguagem de última geração, funcionando como uma verdadeira consultora técnica e operacional da equipe:\n\n• Responde a dúvidas complexas sobre Simples Nacional, Lucro Presumido, Lucro Real, MEI e cálculo de tributos.\n• Orienta rotinas de folha de pagamento, eSocial, DCTFWeb, pró-labore e regras de rescisão da CLT.\n• Explica procedimentos societários na Junta Comercial, viabilidade, DBE, inscrições e alvarás.\n• Conduz passo a passo demandas operacionais do escritório e uso prático do sistema."
+        },
+        {
+          "subtitulo": "Guardrail Estrito de Escopo Contábil",
+          "conteudo": "Para manter o foco e a seriedade profissional do escritório, a IA possui uma regra inegociável de conformidade:\n\n• Se for questionada sobre temas alheios ao trabalho contábil (como esportes, culinária, piadas, cinema ou conversas triviais), a Sara é programada para informar educadamente que não está autorizada a responder sobre esse assunto, preservando a utilidade profissional da ferramenta."
         }
       ]
     }

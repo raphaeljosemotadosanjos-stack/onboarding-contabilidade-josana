@@ -3763,24 +3763,30 @@ app.post('/api/manual/chat', async (req, res) => {
     const groqKeyObj = db.prepare("SELECT valor FROM configuracoes WHERE chave = 'groq_api_key'").get();
     const groqKey = groqKeyObj ? groqKeyObj.valor : null;
 
-    const systemPrompt = `Você é a Sara, assistente e especialista de suporte operacional e de fluxos do escritório Josana Mota Contabilidade.
-Sua missão é explicar como o sistema funciona e orientar passo a passo qualquer demanda ou situação prática que o usuário passar.
+    const systemPrompt = `Você é a Sara, uma Inteligência Artificial avançada, especialista contábil, tributária e operacional da Josana Mota Contabilidade.
+Você possui profundo conhecimento prático e técnico em:
+- Ciências Contábeis: Escrituração, conciliação bancária, balanço patrimonial, DRE, plano de contas, balancetes, livros diário e razão, auditoria e normas brasileiras de contabilidade (NBC/CFC).
+- Área Fiscal e Tributária Brasileira: Simples Nacional (anexos I a V, sublimites, Fator R, apuração e cálculo do DAS), Lucro Presumido (presunções IRPJ/CSLL de 8%, 16%, 32%, PIS/COFINS cumulativo, adicionais), Lucro Real (LALUR, LACS, compensação de prejuízos fiscais, não cumulatividade), MEI (limites, DAS-MEI, desenquadramento), apuração de tributos (ICMS, ISS, IPI), retenções na fonte (IRRF, CSRF, INSS, ISS) e obrigações acessórias (SPED Fiscal, SPED Contábil, EFD-Reinf, DCTF, DEFIS, DeSTDA).
+- Departamento Pessoal / Trabalhista: Legislação CLT, folha de pagamento, pró-labore de sócios, encargos trabalhistas e previdenciários (INSS patronal, FGTS Digital), eSocial, DCTFWeb, férias individuais e coletivas, 13º salário, rescisões de contrato, admissões, convenções coletivas e benefícios.
+- Societário & Legalização: Abertura, alteração e encerramento de empresas, Consulta Prévia de Viabilidade na Junta/Prefeitura, DBE / Redesim / Coleta Web, Junta Comercial, Receita Federal, inscrições municipal e estadual, alvarás de funcionamento, vigilância sanitária, AVCB dos Bombeiros, enquadramento de CNAEs (primário e secundários) e elaboração de contratos sociais.
+- Gestão Operacional de Escritórios e Uso do Sistema Josana Mota: Esteira das 7 etapas de onboarding, ficha de abertura societária (67 perguntas enviadas via WhatsApp), prazos em lote, pautas de cobrança, cockpits dos analistas, mural da equipe, chat interno e métricas executivas.
 
-REGRAS DE RESPOSTA:
-1. Se o usuário perguntar PARA QUE O SISTEMA SERVE ou O QUE ELE FAZ:
-   Explique com clareza e autoridade a missão do sistema: eliminar esquecimentos, padronizar a entrada de novos clientes, conduzir a abertura societária sem atritos via WhatsApp (67 perguntas), organizar a esteira das 7 etapas contábeis com distribuição de responsabilidades por squad, dar a cada técnico um Cockpit de produtividade e à gestão controle total de prazos e métricas.
-2. Se o usuário passar UMA DEMANDA OU SITUAÇÃO OPERACIONAL (ex: "chegou cliente novo para abrir empresa", "o cliente mandou os documentos", "saiu o CNPJ na Junta", "como cobro o cliente", "preciso fechar a folha"):
-   Atue como uma Coordenadora Operacional Sênior e entregue:
-   • 🎯 Diagnóstico da Demanda (qual o fluxo exato aplicável)
-   • 📋 Passo a Passo Numerado no Sistema (onde clicar, quais telas e botões acionar)
-   • 👥 Responsáveis por Setor (Paralegal, Fiscal, DP, Contábil)
-   • ⚠️ Cuidados & Dicas Críticas
-   • 🚀 Próxima Ação Imediata
-3. Use formatação rica em Markdown (títulos '###', listas numeradas, negritos e emojis estratégicos).
-4. Mantenha um tom profissional, cordial, encorajador e prático.
+============================================================
+REGRA MANDATÓRIA, ABSOLUTA E INEGOCIÁVEL (GUARDRAIL DE ESCOPO):
+============================================================
+Você só tem autorização para responder sobre CONTABILIDADE, ÁREA FISCAL, TRIBUTÁRIA, DEPARTAMENTO PESSOAL / TRABALHISTA, LEGALIZAÇÃO SOCIETÁRIA / EMPRESARIAL, FINANÇAS DE EMPRESAS E OPERAÇÃO DO ESCRITÓRIO CONTÁBIL.
 
-BASE OFICIAL DO SISTEMA:
-${JSON.stringify(manual, null, 2)}`;
+Se a pergunta do usuário NÃO for sobre contabilidade ou rotinas contábeis/empresariais (por exemplo: futebol, receitas de culinária, previsão do tempo, cinema, fofocas, piadas, videogames, conselhos amorosos, astrologia, política geral não tributária, programação geral alheia, ou qualquer assunto fora do contexto contábil), você NÃO ESTÁ AUTORIZADA A RESPONDER SOBRE ESSE TEMA.
+
+Nesses casos fora de escopo, responda APENAS e EXATAMENTE a seguinte frase:
+"Desculpe, não estou autorizada a responder sobre esse assunto. Minha atuação é estritamente restrita à contabilidade, área fiscal, tributária, departamento pessoal, societário e rotinas do escritório Josana Mota Contabilidade."
+============================================================
+
+DIRETRIZES DE RESPOSTA PARA TEMAS CONTÁBEIS:
+- Seja didática, precisa e tecnicamente embasada na legislação vigente e nas normas do CFC/Receita Federal/CLT.
+- Use formatação rica em Markdown (títulos '###', listas com marcadores, negritos nos termos-chave e fórmulas quando aplicável).
+- Quando a pergunta envolver processos do escritório ou uso do sistema, integre a resposta com o fluxo correspondente da esteira de 7 etapas ou da ficha societária.
+- Mantenha um tom profissional, cordial, seguro e prestativo.`;
 
     // =========================================================================
     // NÍVEL 1: SE HOUVER CHAVE GROQ CONFIGURADA (LLAMA 3.3 70B - GRÁTIS & RÁPIDO)
@@ -3807,13 +3813,14 @@ ${JSON.stringify(manual, null, 2)}`;
             messages,
             temperature: 0.3,
             max_tokens: 1500
-          })
+          }),
+          signal: AbortSignal.timeout(9000)
         });
 
         if (groqRes.ok) {
           const groqData = await groqRes.json();
           const resposta = groqData.choices?.[0]?.message?.content;
-          if (resposta) {
+          if (resposta && resposta.trim()) {
             return res.json({ resposta, origem: 'groq_llama_ia', versao_manual: manual.versao });
           }
         }
@@ -3823,50 +3830,62 @@ ${JSON.stringify(manual, null, 2)}`;
     }
 
     // =========================================================================
-    // NÍVEL 2: SE HOUVER CHAVE GEMINI CONFIGURADA (GOOGLE GEMINI 1.5/2.0 FLASH)
+    // NÍVEL 2: GOOGLE GEMINI (CASCADE DINÂMICA DE MODELOS MODERNOS 2026)
     // =========================================================================
     if (geminiKey && geminiKey.trim()) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey.trim()}`;
-        
-        const contents = [
-          { role: 'user', parts: [{ text: systemPrompt }] },
-          { role: 'model', parts: [{ text: 'Entendido perfeitamente! Sou a Sara, coordenadora e especialista operacional do sistema Josana Mota Contabilidade. Estou pronta para instruir detalhadamente qualquer demanda ou dúvida da equipe.' }] }
-        ];
+      const geminiModels = [
+        'gemini-3.1-flash-lite',
+        'gemini-3.5-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-flash-latest'
+      ];
 
-        historico.slice(-4).forEach(h => {
-          contents.push({
-            role: h.autor === 'usuario' ? 'user' : 'model',
-            parts: [{ text: h.texto }]
-          });
-        });
+      const contents = [
+        { role: 'user', parts: [{ text: systemPrompt }] },
+        { role: 'model', parts: [{ text: 'Entendido perfeitamente! Sou a Sara, especialista de Inteligência Artificial da Josana Mota Contabilidade. Responderei com precisão técnica a qualquer tema de contabilidade, fiscal, DP, tributário e processos do escritório, e informarei que não estou autorizada a tratar de assuntos fora desse escopo.' }] }
+      ];
 
+      historico.slice(-4).forEach(h => {
         contents.push({
-          role: 'user',
-          parts: [{ text: mensagem }]
+          role: h.autor === 'usuario' ? 'user' : 'model',
+          parts: [{ text: h.texto }]
         });
+      });
 
-        const geminiRes = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents,
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 1500
+      contents.push({
+        role: 'user',
+        parts: [{ text: mensagem }]
+      });
+
+      for (const modelo of geminiModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${geminiKey.trim()}`;
+          const geminiRes = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents,
+              generationConfig: {
+                temperature: 0.25,
+                maxOutputTokens: 2000
+              }
+            }),
+            signal: AbortSignal.timeout(12000)
+          });
+
+          if (geminiRes.ok) {
+            const geminiData = await geminiRes.json();
+            const resposta = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (resposta && resposta.trim()) {
+              return res.json({ resposta, origem: `gemini_ia (${modelo})`, versao_manual: manual.versao });
             }
-          })
-        });
-
-        if (geminiRes.ok) {
-          const geminiData = await geminiRes.json();
-          const resposta = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (resposta) {
-            return res.json({ resposta, origem: 'gemini_ia', versao_manual: manual.versao });
+          } else {
+            const errData = await geminiRes.json().catch(() => ({}));
+            console.warn(`[GEMINI ${modelo}] Código ${geminiRes.status}:`, errData?.error?.message || 'Sem detalhes');
           }
+        } catch (geminiErr) {
+          console.warn(`[GEMINI ${modelo}] Exceção:`, geminiErr.message);
         }
-      } catch (geminiErr) {
-        console.warn('Falha Gemini, ativando motor semântico local avançado:', geminiErr.message);
       }
     }
 
@@ -4230,9 +4249,14 @@ O Cockpit é a central operacional diária de cada colaborador técnico do escri
 
 • O sistema opera exclusivamente na identidade corporativa oficial em alta definição diurna (Azul Marinho Real e Dourado Institucional sobre fundo claro), otimizado para computadores e smartphones com máxima legibilidade documental.`;
 
-    // CENÁRIO M: RESPOSTA INTELIGENTE PARA QUALQUER OUTRA DEMANDA LIVRE
+    // CENÁRIO M: RESPOSTA INTELIGENTE / FILTRO DE ESCOPO CONTÁBIL
     } else {
-      resposta = `### 💡 Orientação Operacional Sara • Josana Mota Contabilidade
+      const isNaoContabil = /futebol|jogo|gol|campeonato|copa|time|receita|bolo|cozinhar|prato|culin(a|á)ria|filme|cinema|s(e|é)rie|ator|atriz|cantor|m(u|ú)sica|piada|engra(c|ç)ad|videogame|jogo|namor|amor|signo|hor(o|ó)scopo|previs(a|ã)o\s+do\s+tempo|clima|chuva|pol(i|í)tica|presidente|elei(c|ç)(a|ã)o/i.test(q);
+      
+      if (isNaoContabil) {
+        resposta = `Desculpe, não estou autorizada a responder sobre esse assunto. Minha atuação é estritamente restrita à contabilidade, área fiscal, tributária, departamento pessoal, societário e rotinas do escritório Josana Mota Contabilidade.`;
+      } else {
+        resposta = `### 💡 Orientação Operacional Sara • Josana Mota Contabilidade
 
 Analisando sua mensagem: *"**${mensagem.replace(/</g, '&lt;').replace(/>/g, '&gt;')}**"*
 
@@ -4254,11 +4278,12 @@ Aqui está a recomendação de condução da demanda no sistema:
 
 💬 **Precisa de mais detalhes?**
 Você pode me perguntar:
-• *"Para que serve o sistema?"*
+• *"Qual a diferença entre Simples Nacional e Lucro Presumido?"*
 • *"Chegou um cliente novo que vai abrir empresa de comércio com 2 sócios, o que fazer?"*
 • *"O cliente mandou os documentos pelo link, qual o próximo passo?"*
 • *"A Junta Comercial aprovou a abertura e saiu o CNPJ, o que faço?"*
 • *"Como cobro o cliente pelo WhatsApp?"*`;
+      }
     }
 
     res.json({

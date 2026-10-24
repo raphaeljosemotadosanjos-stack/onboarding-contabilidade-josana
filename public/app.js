@@ -6723,7 +6723,11 @@ let estadoManual = {
     'cockpit_pessoal_e_ia': false,
     'metricas_equipe_e_gestao': false,
     'ferramentas_e_comunicacao': false,
-    'modo_noturno_e_notion': false
+    'design_corporativo_e_mobile': false,
+    'mural_e_notificacoes': false,
+    'chat_interno_e_minuta': false,
+    'personalizacao_etapas': false,
+    'ia_sara_contabil': false
   },
   historicoChat: []
 };
@@ -6872,10 +6876,10 @@ async function renderManualAjuda(container) {
               </div>
               <div>
                 <div class="flex items-center space-x-2">
-                  <h4 class="font-bold text-sm">Sara • Suporte & Inteligência Artificial</h4>
+                  <h4 class="font-bold text-sm">Sara • Inteligência Artificial Especialista em Contabilidade</h4>
                   <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
                 </div>
-                <p class="text-[11px] text-white/80">Tire dúvidas sobre o sistema, atalhos, CNAEs e processos</p>
+                <p class="text-[11px] text-white/80">Responde dúvidas contábeis, tributárias, fiscais, trabalhistas/DP e processos do escritório</p>
               </div>
             </div>
             <span class="text-[10px] font-semibold text-[#DFC48B] bg-white/10 px-2.5 py-1 rounded-full border border-white/20">
@@ -6891,26 +6895,26 @@ async function renderManualAjuda(container) {
                 IA
               </div>
               <div class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-[#EDEDEB] text-[#2F3437] max-w-[85%] space-y-2 shadow-2xs">
-                <p class="font-bold text-[#0A213D]">Olá! Sou a Sara, especialista de suporte do escritório Josana Mota Contabilidade.</p>
-                <p class="text-[11px] text-[#787774] leading-relaxed">Estou atualizada com todas as rotinas e regras do nosso manual oficial. Você pode me perguntar sobre qualquer funcionalidade do sistema.</p>
+                <p class="font-bold text-[#0A213D]">Olá! Sou a Sara, Inteligência Artificial da Josana Mota Contabilidade.</p>
+                <p class="text-[11px] text-[#787774] leading-relaxed">Estou à sua disposição para responder a qualquer questão técnica sobre <strong>legislação tributária, regimes fiscais (Simples/Presumido/Real), departamento pessoal, rotinas societárias</strong> e fluxo de onboarding do escritório.</p>
               </div>
             </div>
 
             <!-- Chips de sugestões & Demandas -->
             <div class="pt-1">
-              <span class="block text-[10px] font-bold text-[#787774] uppercase tracking-wider mb-2">Perguntas & Demandas Práticas:</span>
+              <span class="block text-[10px] font-bold text-[#787774] uppercase tracking-wider mb-2">Sugestões de Perguntas Contábeis:</span>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button onclick="enviarMensagemRapidaChatEmAba('Para que serve este sistema e como ele funciona?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2.5 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left">
-                  🌟 <strong>Propósito:</strong> Para que serve este sistema?
+                <button onclick="enviarMensagemRapidaChatEmAba('Qual a diferença entre Simples Nacional e Lucro Presumido para serviços?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2.5 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left cursor-pointer">
+                  📊 <strong>Tributário:</strong> Simples Nacional vs Lucro Presumido
                 </button>
-                <button onclick="enviarMensagemRapidaChatEmAba('Chegou um cliente novo que vai abrir empresa com sócios, o que fazer?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2.5 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left">
-                  🏢 <strong>Demanda:</strong> Abertura de empresa com sócios
+                <button onclick="enviarMensagemRapidaChatEmAba('Como funciona o cálculo do Fator R no Simples Nacional?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2.5 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left cursor-pointer">
+                  🧮 <strong>Fiscal/DP:</strong> Como calcular o Fator R do Simples?
                 </button>
-                <button onclick="enviarMensagemRapidaChatEmAba('O cliente já enviou os dados pelo WhatsApp, qual o próximo passo?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2.5 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left">
-                  📥 <strong>Demanda:</strong> Cliente mandou documentos, o que fazer?
+                <button onclick="enviarMensagemRapidaChatEmAba('Chegou um cliente novo que vai abrir empresa com sócios, o que fazer?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2.5 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left cursor-pointer">
+                  🏢 <strong>Societário:</strong> Abertura de empresa com sócios
                 </button>
-                <button onclick="enviarMensagemRapidaChatEmAba('A Junta Comercial aprovou a abertura e saiu o CNPJ, o que faço?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2.5 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left">
-                  🏛️ <strong>Demanda:</strong> Junta aprovou e saiu o CNPJ
+                <button onclick="enviarMensagemRapidaChatEmAba('Como funciona a esteira das 7 etapas de onboarding no escritório?')" class="text-[11px] bg-white hover:bg-[#F7F7F5] text-[#0A213D] p-2.5 rounded-xl border border-[#EDEDEB] transition shadow-2xs text-left cursor-pointer">
+                  🚀 <strong>Onboarding:</strong> Esteira das 7 etapas do escritório
                 </button>
               </div>
             </div>
@@ -6918,7 +6922,7 @@ async function renderManualAjuda(container) {
 
           <!-- INPUT DE MENSAGEM -->
           <form id="form-chat-ia-pagina" onsubmit="enviarMensagemChatIAEmAba(event)" class="p-3.5 border-t border-[#EDEDEB] bg-white flex items-center space-x-2">
-            <input type="text" id="input-chat-ia-pagina-texto" placeholder="Digite sua dúvida sobre o sistema..." class="flex-1 px-3.5 py-2.5 bg-[#F7F7F5] border border-[#EDEDEB] rounded-xl text-xs focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
+            <input type="text" id="input-chat-ia-pagina-texto" placeholder="Pergunte sobre contabilidade, tributos, folha, societário ou rotinas..." class="flex-1 px-3.5 py-2.5 bg-[#F7F7F5] border border-[#EDEDEB] rounded-xl text-xs focus:ring-2 focus:ring-[#0A213D] focus:outline-none">
             <button type="submit" class="px-4 py-2.5 bg-[#0A213D] hover:bg-[#153358] text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
               <i data-lucide="send" class="w-4 h-4 text-[#C5A059]"></i>
               <span>Perguntar</span>
@@ -7005,7 +7009,7 @@ async function processarEnvioMensagemChat(texto, containerId, btnSubmitId) {
       </div>
       <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-[#EDEDEB] text-[#787774] text-xs shadow-2xs flex items-center space-x-2">
         <span class="animate-spin inline-block">⏳</span>
-        <span>Consultando o manual do sistema...</span>
+        <span>Sara analisando sua pergunta contábil...</span>
       </div>
     </div>
   `;
@@ -7665,65 +7669,160 @@ function renderizarTarefasModuloTemplate() {
   lucide.createIcons();
 }
 
-async function abrirModalNovaTarefaTemplate() {
-  const modKey = window._moduloTemplateAtivo || 'MODULO_A_GERAL';
-  const titulo = prompt('Informe o título da nova tarefa do checklist:');
-  if (!titulo || !titulo.trim()) return;
+function fecharModalTemplateTarefa() {
+  const modal = document.getElementById('modal-template-tarefa');
+  if (modal) modal.classList.add('hidden');
+}
 
-  const dep = prompt('Informe o departamento responsável (IMPLANTACAO, PARALEGAL, FISCAL, PESSOAL, CONTABIL, COMERCIAL ou ESPECIAL):', 'IMPLANTACAO');
-  if (!dep) return;
+function selecionarDepTemplate(dep) {
+  const input = document.getElementById('template-tarefa-dep');
+  if (input) input.value = dep;
 
-  const etapa = prompt('Informe o número da etapa (0 a 7):', modKey === 'CONSTITUICAO' ? '0' : '1');
-  if (etapa === null) return;
+  const coresDep = {
+    'IMPLANTACAO': 'border-sky-400 bg-sky-50 text-sky-900 ring-2 ring-sky-400/30',
+    'FISCAL': 'border-emerald-400 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-400/30',
+    'PESSOAL': 'border-blue-400 bg-blue-50 text-blue-900 ring-2 ring-blue-400/30',
+    'CONTABIL': 'border-purple-400 bg-purple-50 text-purple-900 ring-2 ring-purple-400/30',
+    'PARALEGAL': 'border-amber-400 bg-amber-50 text-amber-900 ring-2 ring-amber-400/30',
+    'COMERCIAL': 'border-orange-400 bg-orange-50 text-orange-900 ring-2 ring-orange-400/30',
+    'ESPECIAL': 'border-slate-400 bg-slate-100 text-slate-900 ring-2 ring-slate-400/30'
+  };
 
-  try {
-    const res = await fetch('/api/checklist-templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        modulo: modKey,
-        titulo: titulo.trim(),
-        departamento: dep.toUpperCase().trim(),
-        etapa_numero: parseInt(etapa) || 1,
-        ordem: (window._templatesAtivos || []).length + 1
-      })
-    });
-    if (!res.ok) throw new Error('Erro ao adicionar tarefa.');
-    mostrarToast('Nova tarefa adicionada ao modelo mestre com sucesso!', 'sucesso');
-    renderModelosChecklist(document.getElementById('view-container'));
-  } catch (err) {
-    alert(err.message);
+  document.querySelectorAll('.card-dep-template').forEach(btn => {
+    btn.className = 'card-dep-template flex flex-col items-center justify-center p-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] text-[#2F3437] font-bold text-center transition cursor-pointer hover:bg-slate-50' + (btn.id === 'btn-dep-ESPECIAL' ? ' sm:col-span-2' : '');
+  });
+
+  const btnAtivo = document.getElementById(`btn-dep-${dep}`);
+  if (btnAtivo) {
+    const cor = coresDep[dep] || 'border-sky-400 bg-sky-50 text-sky-900 ring-2 ring-sky-400/30';
+    btnAtivo.className = `card-dep-template flex flex-col items-center justify-center p-2 rounded-xl font-bold text-center transition cursor-pointer ${cor}` + (btnAtivo.id === 'btn-dep-ESPECIAL' ? ' sm:col-span-2' : '');
   }
 }
 
-async function abrirModalEditarTarefaTemplate(id) {
+function selecionarEtapaTemplate(etapa) {
+  const input = document.getElementById('template-tarefa-etapa');
+  if (input) input.value = etapa;
+
+  const nomesEtapa = {
+    0: 'Etapa 00 (Constituição / Abertura)',
+    1: 'Etapa 01 (Formalização & Contrato)',
+    2: 'Etapa 02 (Diagnóstico & Sistemas)',
+    3: 'Etapa 03 (Documentos & Parametrização)',
+    4: 'Etapa 04 (Implantação Operacional)',
+    5: 'Etapa 05 (Alinhamento & Treinamento)',
+    6: 'Etapa 06 (Entregas M1 a M3)',
+    7: 'Etapa 07 (Validação Final & Homologação)'
+  };
+
+  const badgeNome = document.getElementById('badge-etapa-selecionada-nome');
+  if (badgeNome) {
+    badgeNome.textContent = nomesEtapa[etapa] || `Etapa 0${etapa}`;
+  }
+
+  document.querySelectorAll('.btn-etapa-pill').forEach(btn => {
+    btn.className = 'btn-etapa-pill py-2 rounded-xl border border-[#EDEDEB] bg-[#FAFAF9] text-[#2F3437] font-bold text-center text-xs transition cursor-pointer hover:bg-sky-50';
+  });
+
+  const btnAtivo = document.getElementById(`btn-etapa-${etapa}`);
+  if (btnAtivo) {
+    btnAtivo.className = 'btn-etapa-pill py-2 rounded-xl border border-sky-400 bg-sky-50 text-sky-900 font-bold text-center text-xs transition cursor-pointer ring-2 ring-sky-400/30';
+  }
+}
+
+function abrirModalNovaTarefaTemplate() {
+  const modKey = window._moduloTemplateAtivo || 'MODULO_A_GERAL';
+  document.getElementById('template-tarefa-id').value = '';
+  document.getElementById('template-tarefa-modulo').value = modKey;
+  document.getElementById('template-tarefa-titulo').value = '';
+  document.getElementById('modal-template-tarefa-titulo-header').textContent = 'Adicionar Tarefa ao Modelo';
+  document.getElementById('label-btn-salvar-template').textContent = 'Adicionar Tarefa ao Modelo';
+
+  selecionarDepTemplate('IMPLANTACAO');
+  selecionarEtapaTemplate(modKey === 'CONSTITUICAO' ? 0 : 1);
+
+  document.getElementById('modal-template-tarefa').classList.remove('hidden');
+  lucide.createIcons();
+  setTimeout(() => {
+    const el = document.getElementById('template-tarefa-titulo');
+    if (el) el.focus();
+  }, 100);
+}
+
+function abrirModalEditarTarefaTemplate(id) {
   const tarefa = (window._templatesAtivos || []).find(t => t.id === id);
   if (!tarefa) return;
 
-  const novoTitulo = prompt('Editar título da tarefa:', tarefa.titulo);
-  if (!novoTitulo || !novoTitulo.trim()) return;
+  document.getElementById('template-tarefa-id').value = tarefa.id;
+  document.getElementById('template-tarefa-modulo').value = tarefa.modulo || window._moduloTemplateAtivo || 'MODULO_A_GERAL';
+  document.getElementById('template-tarefa-titulo').value = tarefa.titulo;
+  document.getElementById('modal-template-tarefa-titulo-header').textContent = 'Editar Tarefa do Modelo';
+  document.getElementById('label-btn-salvar-template').textContent = 'Salvar Alterações no Modelo';
 
-  const novoDep = prompt('Editar departamento (IMPLANTACAO, PARALEGAL, FISCAL, PESSOAL, CONTABIL, COMERCIAL ou ESPECIAL):', tarefa.departamento);
-  if (!novoDep) return;
+  selecionarDepTemplate(tarefa.departamento || 'IMPLANTACAO');
+  selecionarEtapaTemplate(typeof tarefa.etapa_numero === 'number' ? tarefa.etapa_numero : (parseInt(tarefa.etapa_numero) || 0));
 
-  const novaEtapa = prompt('Editar número da etapa (0 a 7):', tarefa.etapa_numero);
-  if (novaEtapa === null) return;
+  document.getElementById('modal-template-tarefa').classList.remove('hidden');
+  lucide.createIcons();
+  setTimeout(() => {
+    const el = document.getElementById('template-tarefa-titulo');
+    if (el) el.focus();
+  }, 100);
+}
+
+async function salvarModalTemplateTarefa(event) {
+  event.preventDefault();
+
+  const id = document.getElementById('template-tarefa-id').value.trim();
+  const modulo = document.getElementById('template-tarefa-modulo').value.trim() || 'MODULO_A_GERAL';
+  const titulo = document.getElementById('template-tarefa-titulo').value.trim();
+  const departamento = document.getElementById('template-tarefa-dep').value.trim() || 'IMPLANTACAO';
+  const etapa_numero = parseInt(document.getElementById('template-tarefa-etapa').value) || 0;
+
+  if (!titulo) {
+    alert('Por favor, informe o título da atividade.');
+    return;
+  }
+
+  const btnSubmit = document.getElementById('btn-submit-template-tarefa');
+  if (btnSubmit) btnSubmit.disabled = true;
 
   try {
-    const res = await fetch(`/api/checklist-templates/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titulo: novoTitulo.trim(),
-        departamento: novoDep.toUpperCase().trim(),
-        etapa_numero: parseInt(novaEtapa) || 0
-      })
-    });
-    if (!res.ok) throw new Error('Erro ao atualizar tarefa.');
-    mostrarToast('Tarefa do modelo atualizada com sucesso!', 'sucesso');
+    if (id) {
+      // Edição
+      const res = await fetch(`/api/checklist-templates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo,
+          departamento: departamento.toUpperCase(),
+          etapa_numero
+        })
+      });
+      if (!res.ok) throw new Error('Erro ao atualizar tarefa do modelo.');
+      mostrarToast('Tarefa do modelo atualizada com sucesso!', 'sucesso');
+    } else {
+      // Criação
+      const res = await fetch('/api/checklist-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modulo,
+          titulo,
+          departamento: departamento.toUpperCase(),
+          etapa_numero,
+          ordem: (window._templatesAtivos || []).length + 1
+        })
+      });
+      if (!res.ok) throw new Error('Erro ao adicionar tarefa ao modelo.');
+      mostrarToast('Nova tarefa adicionada ao modelo mestre!', 'sucesso');
+    }
+
+    fecharModalTemplateTarefa();
     renderModelosChecklist(document.getElementById('view-container'));
   } catch (err) {
     alert(err.message);
+  } finally {
+    if (btnSubmit) btnSubmit.disabled = false;
   }
 }
 
