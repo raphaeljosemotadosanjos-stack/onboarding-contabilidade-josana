@@ -398,42 +398,11 @@ if (!configQuery.get('caminho_base_servidor')) {
   insertConfig.run('gemini_api_key', '');
 }
 
-// Colaboradores padrão
-const countColabs = db.prepare('SELECT COUNT(*) as count FROM colaboradores').get().count;
-if (countColabs === 0) {
+// Administrador Geral do Escritório (Raphael José)
+const gestorExiste = db.prepare("SELECT id FROM colaboradores WHERE id = 'colab_0' OR perfil = 'GESTOR'").get();
+if (!gestorExiste) {
   const insColab = db.prepare('INSERT INTO colaboradores (id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
   insColab.run('colab_0', 'Raphael José', 'DIRETORIA', 'Gestor Geral & Diretor Executivo', 'raphaeljosemotadosanjos@gmail.com', '(11) 98888-1000', '1234', '#0A213D', 'GESTOR');
-  insColab.run('colab_1', 'Mariana Silva', 'IMPLANTACAO', 'Coordenadora de Implantação', 'mariana@josanamota.com.br', '(11) 98888-1001', '1234', '#0284c7', 'ONBOARDING');
-  insColab.run('colab_2', 'Lucas Mendes', 'FISCAL', 'Analista Fiscal Sênior', 'lucas@josanamota.com.br', '(11) 98888-1002', '1234', '#059669', 'TECNICO');
-  insColab.run('colab_3', 'Carla Souza', 'PESSOAL', 'Analista de DP / Folha', 'carla@josanamota.com.br', '(11) 98888-1003', '1234', '#2563eb', 'TECNICO');
-  insColab.run('colab_4', 'Roberto Alves', 'CONTABIL', 'Contador Responsável', 'roberto@josanamota.com.br', '(11) 98888-1004', '1234', '#7c3aed', 'TECNICO');
-  insColab.run('colab_5', 'Beatriz Lima', 'PARALEGAL', 'Especialista Societário', 'beatriz@josanamota.com.br', '(11) 98888-1005', '1234', '#d97706', 'TECNICO');
-} else {
-  try {
-    const gestorExiste = db.prepare('SELECT id FROM colaboradores WHERE id = "colab_0" OR perfil = "GESTOR"').get();
-    if (!gestorExiste) {
-      db.prepare(`
-        INSERT INTO colaboradores (id, nome, departamento, cargo, email, telefone, pin, cor_avatar, perfil)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run('colab_0', 'Raphael José', 'DIRETORIA', 'Gestor Geral & Diretor Executivo', 'raphaeljosemotadosanjos@gmail.com', '(11) 98888-1000', '1234', '#0A213D', 'GESTOR');
-    }
-    db.prepare(`UPDATE colaboradores SET perfil = 'ONBOARDING' WHERE id = 'colab_1' OR departamento = 'IMPLANTACAO'`).run();
-    db.prepare(`UPDATE colaboradores SET perfil = 'TECNICO' WHERE (perfil IS NULL OR perfil = '') AND id != 'colab_0' AND id != 'colab_1'`).run();
-
-    // Garantir squad em clientes existentes
-    db.prepare(`UPDATE clientes SET resp_paralegal_id = 'colab_5' WHERE resp_paralegal_id IS NULL`).run();
-    db.prepare(`UPDATE clientes SET resp_fiscal_id = 'colab_2' WHERE resp_fiscal_id IS NULL`).run();
-    db.prepare(`UPDATE clientes SET resp_pessoal_id = 'colab_3' WHERE resp_pessoal_id IS NULL`).run();
-    db.prepare(`UPDATE clientes SET resp_contabil_id = 'colab_4' WHERE resp_contabil_id IS NULL`).run();
-
-    // Atribuir tarefas sem responsável ao especialista de cada setor
-    db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_5', responsavel = 'Beatriz Lima' WHERE departamento = 'PARALEGAL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
-    db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_2', responsavel = 'Lucas Mendes' WHERE departamento = 'FISCAL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
-    db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_3', responsavel = 'Carla Souza' WHERE departamento = 'PESSOAL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
-    db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_4', responsavel = 'Roberto Alves' WHERE departamento = 'CONTABIL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
-    db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_1', responsavel = 'Mariana Silva' WHERE departamento = 'IMPLANTACAO' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
-    db.prepare(`UPDATE tarefas_checklist SET responsavel_colaborador_id = 'colab_0', responsavel = 'Raphael José' WHERE departamento = 'COMERCIAL' AND (responsavel_colaborador_id IS NULL OR responsavel_colaborador_id = '')`).run();
-  } catch (e) {}
 }
 
 // Templates dos Checklists
@@ -684,14 +653,15 @@ function popularTarefasOnboarding(clienteId, escopo, tipoEmpresa, squad = {}) {
   const respPessoal = getColabPorIdOuDep(squad.resp_pessoal_id, 'PESSOAL');
   const respContabil = getColabPorIdOuDep(squad.resp_contabil_id, 'CONTABIL');
   const respImplantacao = colaboradores.find(x => x.departamento === 'IMPLANTACAO') || null;
+  const gestorPadrao = colaboradores.find(x => x.perfil === 'GESTOR') || colaboradores[0] || null;
 
   function atribuir(departamento) {
-    if (departamento === 'PARALEGAL') return respParalegal;
-    if (departamento === 'FISCAL') return respFiscal;
-    if (departamento === 'PESSOAL') return respPessoal;
-    if (departamento === 'CONTABIL') return respContabil;
-    if (departamento === 'IMPLANTACAO' || departamento === 'COMERCIAL') return respImplantacao;
-    return null;
+    if (departamento === 'PARALEGAL' && respParalegal) return respParalegal;
+    if (departamento === 'FISCAL' && respFiscal) return respFiscal;
+    if (departamento === 'PESSOAL' && respPessoal) return respPessoal;
+    if (departamento === 'CONTABIL' && respContabil) return respContabil;
+    if ((departamento === 'IMPLANTACAO' || departamento === 'COMERCIAL') && respImplantacao) return respImplantacao;
+    return gestorPadrao;
   }
 
   let ordem = 1;

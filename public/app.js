@@ -2311,7 +2311,7 @@ async function renderTodosClientes(container) {
             const diasCriacao = c.data_inicio ? (Date.now() - new Date(c.data_inicio).getTime()) / (1000 * 3600 * 24) : 0;
             const pendenteMais48h = c.tipo_empresa === 'EM_CONSTITUICAO' && !formRespondido && diasCriacao > 2;
             return `
-              <div onclick="verDetalhesCliente('${c.id}')" class="cliente-item-card bg-white p-4 rounded-xl border ${formRespondido ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-slate-200 hover:border-sky-500'} shadow-sm hover:shadow-md cursor-pointer transition space-y-3" data-nome="${c.razao_social.toLowerCase()}" data-tipo="${c.tipo_empresa}">
+              <div onclick="verDetalhesCliente('${c.id}')" class="cliente-item-card bg-white p-4 rounded-xl border ${formRespondido ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-slate-200 hover:border-sky-500'} shadow-sm hover:shadow-md cursor-pointer transition space-y-3" data-nome="${c.razao_social.toLowerCase()}" data-cnpj="${(c.cnpj_cpf || '').replace(/\D/g, '')}" data-tipo="${c.tipo_empresa}">
                 <div class="flex items-start justify-between">
                   <div>
                     <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
@@ -2332,7 +2332,7 @@ async function renderTodosClientes(container) {
                       ` : ''}
                     </div>
                     <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-1">${c.razao_social}</h4>
-                    <p class="text-[11px] text-slate-500">${c.regime_tributario} • Cód. Domínio: <strong>${c.codigo_dominio || 'S/ Cód'}</strong></p>
+                    <p class="text-[11px] text-slate-500">${c.cnpj_cpf ? `<strong class="text-slate-700 font-mono">${c.cnpj_cpf}</strong> • ` : ''}${c.regime_tributario} • Cód. Domínio: <strong>${c.codigo_dominio || 'S/ Cód'}</strong></p>
                   </div>
                   <span class="font-bold text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded text-[11px]">
                     ${c.status_geral === 'CONCLUIDO' ? '✓ Concluído' : c.etapa_atual === 0 ? 'Abertura' : `Etapa 0${c.etapa_atual}`}
@@ -2372,11 +2372,14 @@ async function renderTodosClientes(container) {
 }
 
 function filtrarCardsClientes(termo = null) {
-  const busca = (termo !== null ? termo : document.getElementById('busca-todos-clientes').value).toLowerCase();
+  const busca = (termo !== null ? termo : document.getElementById('busca-todos-clientes').value).toLowerCase().trim();
+  const buscaNumeros = busca.replace(/\D/g, '');
   const tipo = document.getElementById('filtro-tipo-clientes').value;
 
   document.querySelectorAll('.cliente-item-card').forEach(card => {
-    const matchBusca = !busca || card.dataset.nome.includes(busca);
+    const nome = card.dataset.nome || '';
+    const cnpjNumeros = card.dataset.cnpj || '';
+    const matchBusca = !busca || nome.includes(busca) || (buscaNumeros.length >= 2 && cnpjNumeros.includes(buscaNumeros));
     const matchTipo = (tipo === 'todos' || card.dataset.tipo === tipo);
     card.style.display = (matchBusca && matchTipo) ? 'block' : 'none';
   });
@@ -2959,6 +2962,7 @@ async function renderClienteDetalhes(container, clienteId) {
               </div>
 
               <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-2 pl-8">
+                ${cliente.cnpj_cpf ? `<span>CNPJ: <strong class="text-slate-800 font-mono">${cliente.cnpj_cpf}</strong></span>` : ''}
                 <span>Domínio: <strong class="text-slate-800">${cliente.codigo_dominio || 'Não informado'}</strong></span>
                 <span>Regime: <strong class="text-slate-800">${cliente.regime_tributario}</strong></span>
                 <span>Contato: <strong>${cliente.contato_nome || '—'}</strong> (${cliente.contato_telefone || 'S/ Tel'})</span>
@@ -4476,9 +4480,74 @@ async function salvarConfiguracoes(event) {
 // =========================================================================
 // NOVO ONBOARDING
 // =========================================================================
+function formatarCNPJInput(input) {
+  let v = input.value.replace(/\D/g, '').substring(0, 14);
+  if (v.length > 12) {
+    v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})$/, '$1.$2.$3/$4-$5');
+  } else if (v.length > 8) {
+    v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})$/, '$1.$2.$3/$4');
+  } else if (v.length > 5) {
+    v = v.replace(/^(\d{2})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+  } else if (v.length > 2) {
+    v = v.replace(/^(\d{2})(\d{1,3})$/, '$1.$2');
+  }
+  input.value = v;
+}
+
+function alternarTipoEmpresaNovoCliente(tipo) {
+  const lblConst = document.getElementById('label-tipo-constituida');
+  const lblEmConst = document.getElementById('label-tipo-em-constituicao');
+  const badgeCnpj = document.getElementById('badge-tipo-cnpj');
+  const dicaCnpj = document.getElementById('dica-cnpj-novo');
+  const inputCnpj = document.getElementById('novo-cliente-cnpj');
+
+  if (tipo === 'CONSTITUIDA') {
+    if (lblConst) {
+      lblConst.classList.add('border-sky-600', 'bg-sky-50/40');
+      lblConst.classList.remove('border-slate-200');
+    }
+    if (lblEmConst) {
+      lblEmConst.classList.remove('border-sky-600', 'bg-sky-50/40');
+      lblEmConst.classList.add('border-slate-200');
+    }
+    if (badgeCnpj) {
+      badgeCnpj.textContent = 'Empresa Constituída';
+      badgeCnpj.className = 'text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200';
+    }
+    if (dicaCnpj) {
+      dicaCnpj.textContent = 'Informe o CNPJ ativo da empresa para consulta e controle cadastral.';
+    }
+    if (inputCnpj) {
+      inputCnpj.placeholder = '00.000.000/0000-00';
+    }
+  } else {
+    if (lblEmConst) {
+      lblEmConst.classList.add('border-sky-600', 'bg-sky-50/40');
+      lblEmConst.classList.remove('border-slate-200');
+    }
+    if (lblConst) {
+      lblConst.classList.remove('border-sky-600', 'bg-sky-50/40');
+      lblConst.classList.add('border-slate-200');
+    }
+    if (badgeCnpj) {
+      badgeCnpj.textContent = 'Em Constituição (Opcional)';
+      badgeCnpj.className = 'text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200';
+    }
+    if (dicaCnpj) {
+      dicaCnpj.textContent = 'Em processo de abertura. O CNPJ será gerado durante a constituição na Junta/Receita.';
+    }
+    if (inputCnpj) {
+      inputCnpj.placeholder = 'Será gerado na Junta/Receita';
+    }
+  }
+}
+
 function abrirModalNovoCliente() {
   atualizarSelectsSquad();
-  document.getElementById('modal-novo-cliente').classList.remove('hidden');
+  const modal = document.getElementById('modal-novo-cliente');
+  if (modal) modal.classList.remove('hidden');
+  alternarTipoEmpresaNovoCliente('CONSTITUIDA');
+  if (window.lucide) lucide.createIcons();
 }
 
 function fecharModalNovoCliente() {
@@ -4492,9 +4561,12 @@ async function salvarNovoCliente(event) {
   const formData = new FormData(form);
   const usuario = estado.usuarioLogado || { nome: 'Comercial' };
 
+  const cnpjRaw = formData.get('cnpj') ? formData.get('cnpj').trim() : '';
+
   const dados = {
     tipo_empresa: formData.get('tipo_empresa'),
     razao_social: formData.get('razao_social').trim(),
+    cnpj_cpf: cnpjRaw || null,
     codigo_dominio: formData.get('codigo_dominio') ? formData.get('codigo_dominio').trim() : '',
     regime_tributario: formData.get('regime_tributario'),
     contato_nome: formData.get('contato_nome') ? formData.get('contato_nome').trim() : '',

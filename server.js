@@ -1386,6 +1386,7 @@ app.post('/api/clientes', (req, res) => {
       razao_social,
       nome_fantasia,
       cnpj_cpf,
+      cnpj,
       tipo_empresa = 'CONSTITUIDA',
       regime_tributario = 'SIMPLES',
       contato_nome,
@@ -1402,6 +1403,8 @@ app.post('/api/clientes', (req, res) => {
       usuario_nome = auth?.nome || 'Comercial',
       escopo = {}
     } = req.body;
+
+    const cnpjFinal = (cnpj_cpf || cnpj || '').trim() || null;
 
     if (!razao_social) {
       return res.status(400).json({ error: 'Razão Social é obrigatória.' });
@@ -1423,7 +1426,7 @@ app.post('/api/clientes', (req, res) => {
       codigo_dominio || null,
       razao_social,
       nome_fantasia || null,
-      cnpj_cpf || null,
+      cnpjFinal,
       tipo_empresa,
       regime_tributario,
       contato_nome || null,

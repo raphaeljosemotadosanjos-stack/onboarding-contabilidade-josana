@@ -896,15 +896,15 @@
 
       <form id="form-novo-cliente" onsubmit="salvarNovoCliente(event)" class="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-700">
         <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <label class="flex items-center space-x-2.5 p-2 bg-white border rounded-lg cursor-pointer transition font-medium border-sky-600 bg-sky-50/40">
-            <input type="radio" name="tipo_empresa" value="CONSTITUIDA" checked class="text-sky-600">
+          <label class="flex items-center space-x-2.5 p-2 bg-white border rounded-lg cursor-pointer transition font-medium border-sky-600 bg-sky-50/40" id="label-tipo-constituida">
+            <input type="radio" name="tipo_empresa" value="CONSTITUIDA" checked onchange="alternarTipoEmpresaNovoCliente(this.value)" class="text-sky-600">
             <div>
               <span class="block font-bold text-slate-900">Empresa Já Constituída</span>
               <span class="text-[10px] text-slate-500">Fluxo padrão das 7 Etapas</span>
             </div>
           </label>
-          <label class="flex items-center space-x-2.5 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer transition font-medium hover:border-slate-300">
-            <input type="radio" name="tipo_empresa" value="EM_CONSTITUICAO" class="text-sky-600">
+          <label class="flex items-center space-x-2.5 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer transition font-medium hover:border-slate-300" id="label-tipo-em-constituicao">
+            <input type="radio" name="tipo_empresa" value="EM_CONSTITUICAO" onchange="alternarTipoEmpresaNovoCliente(this.value)" class="text-sky-600">
             <div>
               <span class="block font-bold text-slate-900">Empresa em Constituição</span>
               <span class="text-[10px] text-slate-500">Abertura prévia contratada</span>
@@ -916,6 +916,28 @@
           <div class="sm:col-span-2">
             <label class="block font-semibold text-slate-800 mb-1">Razão Social *</label>
             <input type="text" name="razao_social" required placeholder="Ex: Farmácia São Lucas LTDA" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+          </div>
+
+          <!-- CAMPO CNPJ (DESTAQUE PARA EMPRESA JÁ CONSTITUÍDA) -->
+          <div id="box-campo-cnpj-novo" class="sm:col-span-2">
+            <label class="block font-semibold text-slate-800 mb-1 flex items-center justify-between">
+              <span class="flex items-center space-x-1.5">
+                <i data-lucide="building-2" class="w-3.5 h-3.5 text-[#C5A059]"></i>
+                <span>Número do CNPJ</span>
+              </span>
+              <span id="badge-tipo-cnpj" class="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                Empresa Constituída
+              </span>
+            </label>
+            <div class="relative">
+              <input type="text" name="cnpj" id="novo-cliente-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="formatarCNPJInput(this)" class="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400 pointer-events-none">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+              </span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1" id="dica-cnpj-novo">
+              Informe o CNPJ ativo da empresa para consulta e controle cadastral.
+            </p>
           </div>
 
           <div>

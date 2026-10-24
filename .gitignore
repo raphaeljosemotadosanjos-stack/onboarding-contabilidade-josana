@@ -9,7 +9,9 @@ tunnel_output.log
 test.txt
 test_literal.txt
 
-# Backups e temporários
+# Backups e banco de dados SQLite local (nunca sobrescrever dados em atualizações)
+database.sqlite
+*.sqlite
 database.sqlite.backup
 *.sqlite-shm
 *.sqlite-wal
